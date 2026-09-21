@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+@theme {
+  --font-kannada: 'Noto Serif Kannada', serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --color-earth-50: #f9f7f2;
+  --color-earth-100: #f0ebe0;
+  --color-earth-200: #e2d8be;
+  --color-earth-300: #cdc29a;
+  --color-earth-400: #b5a47a;
+  --color-earth-500: #9d8860;
+  --color-earth-600: #7f6d4e;
+  --color-earth-700: #64553d;
+  --color-earth-800: #524635;
+  --color-earth-900: #443a2e;
+  --color-leaf-400: #6ab04c;
+  --color-leaf-500: #4a8a2e;
+  --color-leaf-600: #396b22;
+  --color-leaf-700: #2e551b;
+  --color-sky-deep: #1a4a7a;
+  --color-amber-warm: #d4950a;
+  --color-amber-deep: #a87208;
+  --color-sand: #f7f3e8;
+  --color-ink: #1a1a1a;
+  --color-paper: #fffdf8;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #fffdf8;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* High contrast focus rings for accessibility */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #4a8a2e;
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar for web-like feel */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #f0ebe0; }
+::-webkit-scrollbar-thumb { background: #b5a47a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #9d8860; }
+
+/* Large touch targets */
+button, .btn-large {
+  min-height: 56px;
+  touch-action: manipulation;
+}
+
+/* Kannada font support */
+.font-kannada {
+  font-family: 'Noto Serif Kannada', serif;
+}
+
+/* Card shadow for rural warmth */
+.card-rural {
+  box-shadow: 0 2px 12px rgba(92, 72, 40, 0.08), 0 1px 3px rgba(92, 72, 40, 0.06);
+  border: 1.5px solid rgba(92, 72, 40, 0.08);
+}
+
+/* Availability status indicators */
+.status-available { background: #4a8a2e; }
+.status-busy { background: #d4950a; }
+.status-offline { background: #9a8e82; }
+
+/* Gentle entrance animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.35s ease-out both;
+}
+
+/* Phone call pulse */
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(74, 138, 46, 0.5); }
+  70% { box-shadow: 0 0 0 14px rgba(74, 138, 46, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 138, 46, 0); }
+}
+
+.pulse-ring {
+  animation: pulse-ring 2s infinite;
+}
