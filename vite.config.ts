@@ -16,4 +16,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+  server: {
+    host: true, // listen on 0.0.0.0 so phones on the same Wi-Fi / preview proxies can open it
+    port: 5173,
+    strictPort: false,
+    allowedHosts: true, // allow tunnelled / proxied hostnames (ngrok, e2b, etc.) for field testing
+  },
+  preview: {
+    host: true,
+    port: 4173,
+    allowedHosts: true,
+  },
 });

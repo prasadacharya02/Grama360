@@ -1,138 +1,141 @@
-# Grama360 — Rural Service Discovery Platform (MVP)
+# Grama360 — ಗ್ರಾಮ360
 
-## Architecture (Option A: Modern Web-First MVP)
+**Your village services, one contact. · ನಿಮ್ಮ ಊರಿನ ಸೇವೆಗಳು ಒಂದೇ ಸಂಪರ್ಕದಲ್ಲಿ.**
 
-```
-Frontend (React + Vite + Tailwind)  ←→  Mock Data Layer (JSON/TS)
-         ↓
-    Future: REST API (Node/Express + PostgreSQL)
-         ↓
-    Future Channels: WhatsApp Bot / IVR / Call Center / Mobile App
-```
+A rural service-discovery network for the **Brahmavara – Mandarthi** pilot (Udupi district, Karnataka).
+Local service providers — auto drivers, electricians, plumbers, tractor owners, coconut climbers,
+tailors, tutors, shops — **register themselves** in the app. Customers search *"auto driver"* (or say
+*"ನನಗೆ ಆಟೋ ಬೇಕು"*) and get a list of people who are **available right now**, with a one-tap **Call** button.
 
-**Why this architecture for the MVP?**
-- React + Vite provides instant hot-reload and a polished UI experience.
-- Tailwind CSS v4 with custom `earth`, `leaf`, and `amber` color tokens creates a rural, warm, high-contrast interface.
-- The mock data layer simulates relational database entities (`User`, `ProviderProfile`, `ServiceCategory`, `Review`, `Report`) so a backend can be swapped in without changing the frontend.
-- The `vite-plugin-singlefile` builds a self-contained `dist/index.html` that can be served statically — perfect for quick preview and deployment to platforms like Netlify, Vercel, or a simple Nginx server.
+> Technology works in the background, while rural people simply communicate naturally.
 
-## Database Design (Planned Schema)
+## Three ways people use Grama360
 
-### Tables
-- `users` — id, name, phone_number, role, language, created_at
-- `provider_profiles` — id, user_id, category_id, village, district, latitude, longitude, service_radius, experience_years, description, availability_status, verification_status, rating, review_count
-- `service_categories` — id, name, kannada_name, icon
-- `reviews` — id, customer_id, provider_id, rating, comment, created_at
-- `reports` — id, reporter_id, provider_id, reason, status, created_at
-- `analytics_snapshot` — aggregate metrics for admin dashboard
+| Who | How | Where it lives in the code |
+|-----|-----|----------------------------|
+| 📞 **Keypad-phone users** | Call the single Grama360 number and say what they need. The operator finds the nearest available provider and connects them. | **Operator desk** (`src/components/Admin/OperatorDesk.tsx`) — type/dictate what the caller said, get matching providers + a Kannada read-out script, log the request in one tap. |
+| 📱 **Smartphone users** | Open the app (installable from the browser on Android), search or **speak in Kannada**, tap **Call**. | Customer home & search (`src/components/Customer/`), voice input via the phone's own speech recognition (`src/hooks/useSpeechInput.ts`). |
+| 🏪 **People without digital knowledge** | Visit a Grama360 representative, who uses the operator desk on their behalf. | Same operator desk, channel = *walk-in*. |
 
-### Relationships
-- `provider_profiles` → `users` (user_id FK)
-- `provider_profiles` → `service_categories` (category_id FK)
-- `reviews` → `users` (customer_id FK) and `provider_profiles` (provider_id FK)
-- `reports` → `users` (reporter_id FK) and `provider_profiles` (provider_id FK)
+All three channels query the **same provider database** through the same search function
+(`src/utils/match.ts` → `searchProviders`). A WhatsApp bot or IVR later plugs into exactly that function.
 
-## Features Implemented
+## What the app does today
 
-### Phase 1 — Foundation
-- [x] Splash screen with Kannada branding (`ಗ್ರಾಮ ಸೇವೆ`)
-- [x] Language selection (English / Kannada)
-- [x] Mobile OTP authentication (mock: code `123456` for any number)
-- [x] Role selection (Customer / Service Provider / Admin)
+**Provider side**
+- Self-registration in 3 short steps: *What work do you do?* → *About you* (name, number customers should call, WhatsApp) → *Where do you work?* (village, villages you go to, hours, experience, note). Free listing.
+- Big one-tap status toggle: 🟢 **Available for work** · 🟡 **Busy** · ⚪ **Not working today**.
+- Dashboard shows "how customers see you", verification status, reviews, customers connected to you, share-my-card, add another service (one person can be both an auto driver and a goods-vehicle owner).
 
-### Phase 2 — Discovery
-- [x] Service category browsing with icons (Auto, Electrician, Plumber, Carpenter, Mechanic, Farmer, Tractor, Tutor, Shop)
-- [x] Search functionality (text input for future voice integration)
-- [x] Provider cards with village, rating, availability pulse indicator
-- [x] Click-to-call (`tel:` links)
+**Customer side**
+- Search by occupation, name, village or a natural sentence in English/Kannada — *"plumber kota"*, *"ಕರೆಂಟ್ ಹೋಗಿದೆ"*, *"ಬ್ರಹ್ಮಾವರದಿಂದ ಮಂದಾರ್ತಿಗೆ ಆಟೋ ಬೇಕು"* all work.
+- Results ranked **available → verified → rating**; village filter; "available now only" toggle.
+- Provider card: name, occupation, village, status, badges, rating, **📞 Call · 98453 60001**, WhatsApp.
+- Profile page with details, verification explanation, reviews (write inline), report profile.
+- Emergency numbers (112 / 108 / 100 / 101 / Elder Line 14567) and the Grama360 helpline for people without the app.
 
-### Phase 3 — Provider & Verification
-- [x] Provider registration form (village, district, service area, experience, working hours, description)
-- [x] Real-time availability control (Available Now / Busy / Offline)
-- [x] Provider profile editor
-- [x] Phone Verified & Grama360 Verified badges
-- [x] Ratings and reviews
-- [x] Report profile functionality
+**Trust & safety**
+- OTP phone login (demo code `123456`). New providers are **Phone Verified** immediately; a Grama360 representative upgrades them to **⭐ Grama360 Verified** from the admin dashboard.
+- 🏆 **Highly rated** badge (≥ 4.5 with 2+ reviews), community reviews and reports.
 
-### Phase 4 — Admin & Analytics
-- [x] Admin dashboard with user counts, provider counts
-- [x] Verification management (approve/reject pending profiles)
-- [x] Report resolution (resolve/reject suspicious accounts)
-- [x] Basic analytics snapshot
+**Operations (admin / operator)**
+- Live stats: providers, available now, requests this month, customers.
+- Operator desk for calls / WhatsApp / walk-ins with Kannada read-out scripts.
+- **Service request log** — the pilot's "Google Sheet": every request, channel, caller, provider connected, status, and the potential commission at ₹100/request.
+- Demand-vs-supply chart per service so you know which providers to recruit next.
 
-## API-First Design for Future Channels
+**Everything is bilingual** (English / ಕನ್ನಡ) — toggle from the top bar at any time.
 
-The mock store (`src/store.ts`) is structured to directly map to a REST API:
-
-```typescript
-// Planned REST endpoints
-GET  /api/categories
-GET  /api/providers?category=&village=&available=
-GET  /api/providers/:id
-POST /api/reviews
-POST /api/reports
-PATCH /api/providers/:id/availability
-PATCH /api/providers/:id/verify
-```
-
-**IVR / Call Center Integration Path:**
-1. A future `call-center` module can import the same `ServiceCategory` types.
-2. A voice system parses the caller's Kannada phrase (`"ನನಗೆ ಆಟೋ ಬೇಕು"`) into `category='auto'` and `village='current_location'`.
-3. The operator (or automated system) queries the provider database: `GET /api/providers?category=auto&available=AVAILABLE_NOW&village=Kanakapura`.
-4. The system reads the response aloud in Kannada: `"ಶಿವಣ್ಣ, ಆಟೋ ಚಾಲಕ, ಲಭ್ಯ. ಕರೆ ಮಾಡಿ: 98765 43211"`.
-5. No smartphone app is required for the caller — the platform is accessible via voice.
-
-## Running the Project
+## Run it
 
 ```bash
-# Development server with preview
-npm run dev
-
-# Build for production (single-file output)
-npm run build
-
-# Preview the production build
+npm install
+npm run dev        # http://localhost:5173 — also reachable from phones on the same Wi-Fi
+npm run build      # single-file dist/index.html + manifest + icon (host anywhere: Netlify, Vercel, Nginx)
 npm run preview
 ```
 
-The `preview` server runs on `localhost:4173` by default and serves the inlined `dist/index.html`.
+**Demo logins** (bottom of the login screen): *Customer* (Ganapathi Bhat), *Provider* (Ravi, auto driver, Brahmavara), *Operator / Admin*.
+Or log in with any 10-digit number + OTP `123456` — a new number becomes a new user and can register as a provider.
 
-## Design Principles
+Data is stored in the browser's `localStorage` (`grama360:v2`), so providers you register during
+field testing survive a refresh. *Admin → Reset demo data* restores the seed.
 
-- **Large touch targets**: All buttons have `min-height: 56px` and generous padding.
-- **High contrast**: Deep `leaf-700` green headers on light `paper` backgrounds; amber call-to-action buttons.
-- **Minimal text**: Icon-first navigation with Kannada labels where appropriate.
-- **No email login**: Only phone number + OTP; rural users often lack email access.
-- **Single-page flow**: Very few navigation steps from splash to provider contact.
+On Android Chrome, *Menu → Add to Home screen* installs Grama360 as an app (web manifest included).
 
-## Technology Stack
+## Project structure
 
-| Layer | Technology | Reason |
-|-------|-----------|--------|
-| Frontend | React 19 + TypeScript + Vite | Fast build, type-safe |
-| Styling | Tailwind CSS v4 | Rapid custom theming |
-| Build | vite-plugin-singlefile | One-file deployment |
-| Icons | lucide-react | Clean, scalable SVG icons |
-| State | React Context (custom `useAppStore`) | No external store needed for MVP |
-| Database (future) | PostgreSQL / Supabase | Relational, supports geospatial queries |
-| Auth (future) | Supabase Auth / Firebase Phone Auth | OTP via SMS |
+```
+src/
+  App.tsx                    router + app frame (header, bottom nav, toast)
+  store.tsx                  shared state (React Context) + localStorage persistence
+  i18n.ts                    every UI string in English and Kannada
+  types.ts                   User, ProviderProfile, ServiceCategory, Review, Report, ServiceRequest
+  data/catalog.ts            service categories (+ Kannada keywords), pilot villages, emergency numbers
+  data/seed.ts               demo providers/customers/requests for Brahmavara–Mandarthi
+  utils/match.ts             intent parser + searchProviders (shared by app, operator desk, future IVR/WhatsApp)
+  utils/format.ts            phone formatting (E.164 ↔ "98453 60001"), tel:/wa.me links, village labels
+  hooks/useSpeechInput.ts    Kannada/English voice input (Web Speech API)
+  components/
+    Splash / LanguageSelect / Auth / Shell (header + bottom nav) / ProviderCard / ui
+    Customer/  Home, Search, SearchBar
+    Provider/  ProviderForm (register + edit), Dashboard, PublicProfile
+    Admin/     Dashboard, OperatorDesk, RequestsLog
+docs/IVR-API.md              how the call-centre / IVR / WhatsApp channels reuse the same data & matcher
+public/manifest.webmanifest  installable web app
+```
 
-## Known Demo Limitations
+## Data model
 
-- OTP is hardcoded to `123456` for demonstration.
-- Provider database is mocked in-memory; no persistent backend is connected.
-- Map/geolocation is simulated with static `latitude`/`longitude` fields.
-- Voice search button is visible but triggers a placeholder alert for future integration.
+```
+users              id, name, phone_number (E.164), role, language, verified
+provider_profiles  id, user_id, name, phone_number, category_id, village, district, service_area[],
+                   experience_years, description, working_hours, has_whatsapp,
+                   availability_status (AVAILABLE_NOW|BUSY|OFFLINE),
+                   verification_status (PENDING|PHONE_VERIFIED|GRAMA360_VERIFIED), rating, review_count
+service_categories id, name, kannada_name, icon, group, keywords[]
+reviews            id, customer_id, provider_id, rating, comment
+reports            id, reporter_id, provider_id, reason, status
+service_requests   id, channel (app|call|whatsapp|walk_in), caller_name, caller_phone, village,
+                   category_id, note, provider_id, status (OPEN|CONNECTED|COMPLETED|CANCELLED)
+```
 
-## Next Steps (Post-MVP)
+The store is shaped like the future REST API, so swapping `localStorage` for a backend is mechanical:
 
-1. Replace mock store with Supabase PostgreSQL database.
-2. Implement real Firebase/Supabase OTP SMS delivery.
-3. Add Google Maps or OpenStreetMap integration for live location filtering.
-4. Build WhatsApp Business API bot for service requests.
-5. Build IVR voice parser (Kannada/English) for call-center integration.
-6. Launch native Flutter Android app for wider rural reach.
+```
+GET   /providers?category=auto&village=Brahmavara&available=true
+POST  /providers                       PATCH /providers/:id/availability
+POST  /reviews                         POST  /reports
+POST  /requests                        PATCH /requests/:id
+PATCH /providers/:id/verification      (admin)
+```
+
+## Business model (unchanged from the plan)
+
+Free basic listing → ⭐ Verified listing → 🚀 Premium visibility → 🏪 Business profiles → small
+commission on completed requests once the network is dense. The request log already computes
+*requests this month × ₹100* so the pilot can be measured from day one.
+
+## How the code maps to the 7-day pilot plan
+
+| Day | Plan | In the app |
+|-----|------|-----------|
+| 1 | Find 10 real problems | Log them in the **request log** (channel: walk-in) — demand chart shows what to launch first |
+| 2 | Identify 5 electricians / 5 plumbers / 5 agri providers | Hand them your phone: **Register my service** takes 2 minutes |
+| 3 | Pick agriculture *or* home services | Categories are grouped by pillar; hide the rest by editing `data/catalog.ts` if you want |
+| 4 | WhatsApp Business profile | Provider cards and profiles already deep-link to WhatsApp (`wa.me`) |
+| 5 | One calling number | Set `GRAMA360_HELPLINE` in `data/catalog.ts` |
+| 6 | Test with 10 people | Kannada UI + voice search; watch what they type/say and add those words to `keywords` |
+| 7 | Small pilot launch | Operator desk + request log replace the Google Sheet |
+
+## Next steps (post-pilot)
+
+1. **Backend**: Supabase/PostgreSQL behind the same store interface; Firebase/Supabase phone OTP for real SMS.
+2. **WhatsApp Business API** bot: forward the message text to `parseIntent` + `searchProviders`, reply with the top 3 cards.
+3. **IVR** (Exotel / Knowlarity): Kannada menu → same search → read out the top result (see `docs/IVR-API.md`).
+4. **Android app**: wrap the web build with Capacitor / TWA for the Play Store; push notifications for providers.
+5. **Location**: optional GPS on providers for distance-based ranking beyond village names.
 
 ---
 
-Built with focus on rural Karnataka communities, digital accessibility, and low-bandwidth usability.
+Built for rural Karnataka: large touch targets, high contrast, Kannada first, works on low bandwidth, no email required.

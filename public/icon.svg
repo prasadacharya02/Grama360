@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#2e551b"/>
+  <circle cx="256" cy="256" r="176" fill="#396b22"/>
+  <path d="M256 128c-72 0-124 60-124 128 0 34 12 62 32 84 38-58 82-98 138-128-42 44-76 96-96 156 16 6 34 8 50 8 72 0 124-60 124-128S328 128 256 128z" fill="#fffdf8"/>
+  <text x="256" y="452" text-anchor="middle" font-family="Noto Serif Kannada, Inter, sans-serif" font-size="56" font-weight="800" fill="#fffdf8">ಗ್ರಾಮ360</text>
+</svg>

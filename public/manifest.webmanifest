@@ -1,0 +1,15 @@
+{
+  "name": "Grama360 – ಗ್ರಾಮ360",
+  "short_name": "Grama360",
+  "description": "Your village services, one contact. ನಿಮ್ಮ ಊರಿನ ಸೇವೆಗಳು ಒಂದೇ ಸಂಪರ್ಕದಲ್ಲಿ.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2e551b",
+  "theme_color": "#2e551b",
+  "lang": "kn",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

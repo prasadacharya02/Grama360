@@ -1,38 +1,64 @@
+export type Language = 'en' | 'kn';
+export type Role = 'customer' | 'provider' | 'admin';
+
+export type AvailabilityStatus = 'AVAILABLE_NOW' | 'BUSY' | 'OFFLINE';
+export type VerificationStatus = 'PENDING' | 'PHONE_VERIFIED' | 'GRAMA360_VERIFIED';
+
+/** The three launch pillars (+ transport, because "I need an auto" is the #1 rural request). */
+export type CategoryGroup = 'transport' | 'agriculture' | 'home' | 'essential';
+
 export interface User {
   id: string;
   name: string;
-  phoneNumber: string;
-  role: 'customer' | 'provider' | 'admin';
-  language: 'en' | 'kn';
+  phoneNumber: string; // E.164, e.g. +919845000001
+  role: Role;
+  language: Language;
   createdAt: string;
-  verified: boolean;
+  verified: boolean; // phone OTP verified
 }
 
 export interface ServiceCategory {
   id: string;
-  name: string;          // English
-  kannadaName: string;   // Kannada
-  icon: string;          // lucide icon key
+  name: string; // English
+  kannadaName: string; // Kannada
+  icon: string; // lucide icon key
+  group: CategoryGroup;
+  /**
+   * Words people actually say/type for this service, in English and Kannada.
+   * Used by text search, the voice search and the operator desk
+   * ("ನನಗೆ ಆಟೋ ಬೇಕು" → auto).
+   */
+  keywords: string[];
 }
 
+export interface Village {
+  id: string;
+  name: string;
+  kannadaName: string;
+}
+
+/**
+ * A self-registered service provider. One row = one person / one occupation.
+ * (A person offering two services registers two profiles.)
+ */
 export interface ProviderProfile {
   id: string;
   userId: string;
+  name: string; // the provider's own name, e.g. "Ravi"
+  phoneNumber: string; // what the customer will call
   categoryId: string;
   village: string;
   district: string;
-  serviceArea: string;
-  latitude: number | null;
-  longitude: number | null;
+  serviceArea: string[]; // villages they are willing to go to
   experienceYears: number;
   description: string;
-  availabilityStatus: 'AVAILABLE_NOW' | 'BUSY' | 'OFFLINE';
-  verificationStatus: 'PENDING' | 'PHONE_VERIFIED' | 'GRAMA360_VERIFIED';
-  rating: number;        // average 1-5
-  reviewCount: number;
-  phoneNumber: string;
-  photoUrl: string | null;
   workingHours: string;
+  hasWhatsApp: boolean;
+  photoUrl: string | null;
+  availabilityStatus: AvailabilityStatus;
+  verificationStatus: VerificationStatus;
+  rating: number; // average 1-5 (0 = no reviews yet)
+  reviewCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -57,21 +83,34 @@ export interface Report {
   createdAt: string;
 }
 
-export interface Notification {
+/** How the request reached Grama360. */
+export type RequestChannel = 'app' | 'call' | 'whatsapp' | 'walk_in';
+
+/**
+ * A service request = one customer need that Grama360 helped with.
+ * This is the "Google Sheet" of the pilot: it powers demand analytics
+ * and (later) the ₹ commission model.
+ */
+export interface ServiceRequest {
   id: string;
-  userId: string;
-  message: string;
-  messageKn: string;
-  type: 'new_review' | 'verification' | 'report_update';
-  read: boolean;
+  channel: RequestChannel;
+  callerName: string;
+  callerPhone: string;
+  village: string;
+  categoryId: string | null;
+  note: string; // what the person asked for, in their own words
+  providerId: string | null; // provider they were connected to
+  status: 'OPEN' | 'CONNECTED' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
 }
 
 export interface AnalyticsSnapshot {
   totalCustomers: number;
   totalProviders: number;
+  availableNow: number;
   totalCategories: number;
   pendingVerifications: number;
   openReports: number;
-  topDistrict: string;
+  requestsThisMonth: number;
+  topVillage: string;
 }
