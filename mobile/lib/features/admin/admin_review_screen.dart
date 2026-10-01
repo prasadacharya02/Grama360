@@ -156,9 +156,8 @@ class _AdminReviewScreenState extends ConsumerState<AdminReviewScreen> {
           ),
         Expanded(
           child: RefreshIndicator(
-            onRefresh: () async {
-              await ref.refresh(pendingProviderReviewsPageProvider(_offset).future);
-            },
+            onRefresh: () =>
+                ref.refresh(pendingProviderReviewsPageProvider(_offset).future),
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
               itemCount: page.items.length,

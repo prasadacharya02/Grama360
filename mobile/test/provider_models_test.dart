@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/features/provider_registration/provider_models.dart';
+import 'package:grama360/features/provider_registration/provider_models.dart';
 
 void main() {
   test('parses localized category IDs and parent relationships', () {

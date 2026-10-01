@@ -57,7 +57,7 @@ class FirebaseSetupScreen extends ConsumerWidget {
                           : [strings.firebaseInitCheck],
                     ),
                   if (missingApi)
-                    const _RequiredConfigCard(
+                    _RequiredConfigCard(
                       title: strings.apiConfigTitle,
                       values: ['GRAMA360_API_BASE_URL (must end in /api/v1)'],
                     ),

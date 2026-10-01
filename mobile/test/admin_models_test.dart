@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/features/admin/admin_models.dart';
+import 'package:grama360/features/admin/admin_models.dart';
 
 void main() {
   test('parses administrator roles and keeps support read-only', () {
