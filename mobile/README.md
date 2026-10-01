@@ -1,6 +1,6 @@
 # Grama360 Android app
 
-This is the primary Grama360 product: a native Flutter app for Android. It is organized by feature and uses Riverpod, GoRouter, Flutter localization (English/Kannada ARB files), Firebase Phone Authentication, Firebase Storage for optional profile photos, and an authenticated REST API client. Customer/provider role assignment is server-backed. Provider self-registration and status tracking are implemented, with a native provider-review console for MFA-enabled staff; customer discovery, calling, and maps are later phases.
+This is the primary Grama360 product: a native Flutter app for Android. It is organized by feature and uses Riverpod, GoRouter, Flutter localization (English/Kannada ARB files), Firebase Phone Authentication, Firebase Storage for optional profile photos, and an authenticated REST API client. Customer/provider role assignment is server-backed. The app includes provider self-registration/status tracking, customer search by service and locality, safe provider profiles with schedules and rating summaries, and native dialer launch; MFA-enabled staff have a provider-review console. GPS maps, provider availability controls, favorites, reviews, and reports remain later phases.
 
 ## Requirements
 

@@ -43,7 +43,7 @@
   "roleSaveError": "Couldn't save your choice. Check your connection and try again.",
   "roleReadyTitle": "Your account is ready",
   "roleReadyMessage": "Your role choice is saved. Continue with the features available in your account.",
-  "customerNextPhase": "Nearby service discovery will be added next.",
+  "customerNextPhase": "Search approved providers by service and nearby area.",
   "providerNextPhase": "Complete provider registration and submit your profile for review.",
   "providerLoading": "Loading your provider profile…",
   "providerProfileLoadError": "Couldn't load your provider profile. Check your connection and try again.",
@@ -110,7 +110,7 @@
   "providerPendingTitle": "Your profile is being reviewed",
   "providerPendingBody": "Your details have been submitted. The Grama360 team will review them before your profile is listed for customers.",
   "providerApprovedTitle": "Your profile is approved",
-  "providerApprovedBody": "Your provider profile is approved. Customer discovery and availability features are being added in upcoming phases.",
+  "providerApprovedBody": "Your profile is approved and eligible to appear in customer search. Availability controls will be added in a later update.",
   "providerRejectedBody": "Your profile needs changes before it can be approved. Review your details and submit them again.",
   "providerSuspendedTitle": "Your profile is temporarily hidden",
   "providerSuspendedBody": "Your profile is not visible right now. Contact the Grama360 team if you need help.",
@@ -165,5 +165,57 @@
   "adminCancel": "Cancel",
   "adminRejectNoteLabel": "Reason for rejection",
   "adminRejectNoteHint": "Explain what the provider should update.",
-  "adminRejectNoteRequired": "Add a note before rejecting."
+  "adminRejectNoteRequired": "Add a note before rejecting.",
+  "discoveryTitle": "Find local services",
+  "discoveryIntro": "Choose a service and search by village, town, or district.",
+  "discoveryQueryLabel": "Service or provider",
+  "discoveryQueryHint": "For example, electrician",
+  "discoveryLocationLabel": "Village, town, or district",
+  "discoveryLocationHint": "For example, Hubballi",
+  "discoveryCategoryLabel": "Service type",
+  "discoveryAllServices": "All services",
+  "discoverySearchButton": "Find providers",
+  "discoverySearching": "Looking for nearby providers…",
+  "discoverySearchError": "Couldn't load providers. Check your connection and try again.",
+  "discoveryNoResults": "No approved providers found. Try another service or nearby place.",
+  "discoveryAvailableStatus": "Available",
+  "discoveryBusyStatus": "Busy",
+  "discoveryOfflineStatus": "Offline",
+  "discoveryLocationHeading": "Service area",
+  "discoveryServicesHeading": "Services",
+  "discoveryExperience": "{years} years of experience",
+  "@discoveryExperience": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
+  "discoveryServiceRadius": "Travels up to {radius} km",
+  "@discoveryServiceRadius": {
+    "placeholders": {
+      "radius": {
+        "type": "String"
+      }
+    }
+  },
+  "discoveryHoursHeading": "Usual working hours",
+  "discoveryClosed": "Closed",
+  "discoveryCallButton": "Call provider",
+  "discoveryCallError": "Couldn't open the phone dialer. Check your device and try again.",
+  "discoveryRatingSummary": "{rating} stars · {count} reviews",
+  "@discoveryRatingSummary": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoveryNoReviews": "No customer reviews yet",
+  "discoveryProviderProfileError": "Couldn't load this provider. Check your connection and try again.",
+  "discoveryProviderModeTooltip": "My provider profile",
+  "loadMore": "Load more"
 }

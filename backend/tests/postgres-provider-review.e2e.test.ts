@@ -17,8 +17,10 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
   const phoneSuffix = String(randomInt(0, 1_000_000_000)).padStart(9, '0');
   const providerUid = `smoke-provider-${suffix}`;
   const adminUid = `smoke-admin-${suffix}`;
+  const customerUid = `smoke-customer-${suffix}`;
   const providerPhone = `+919${phoneSuffix}`;
   const adminPhone = `+918${phoneSuffix}`;
+  const customerPhone = `+917${phoneSuffix}`;
   const locality = `Smoke ${suffix}`;
   const district = 'Dharwad';
   const locationSlug = manualLocationSlug({
@@ -32,6 +34,7 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
   let providerProfileId: string | null = null;
   let providerSeeded = false;
   let adminSeeded = false;
+  let customerSeeded = false;
 
   beforeAll(async () => {
     const category = await pool.query<{ id: string }>(
@@ -50,6 +53,17 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
       `INSERT INTO user_roles (user_id, role)
        SELECT id, 'PROVIDER' FROM users WHERE firebase_uid = $1`,
       [providerUid],
+    );
+    await pool.query(
+      `INSERT INTO users (firebase_uid, phone_e164, phone_verified_at)
+       VALUES ($1, $2, NOW())`,
+      [customerUid, customerPhone],
+    );
+    customerSeeded = true;
+    await pool.query(
+      `INSERT INTO user_roles (user_id, role)
+       SELECT id, 'CUSTOMER' FROM users WHERE firebase_uid = $1`,
+      [customerUid],
     );
     await pool.query(
       `INSERT INTO users (firebase_uid, phone_e164, phone_verified_at)
@@ -75,6 +89,11 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
         signInProvider: 'password',
         signInSecondFactor: 'phone',
         authTime: Math.floor(Date.now() / 1000),
+      },
+      'smoke-customer-token': {
+        uid: customerUid,
+        phoneNumber: customerPhone,
+        signInProvider: 'phone',
       },
     };
     app = createApp({
@@ -106,6 +125,7 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
         await pool.query('DELETE FROM users WHERE firebase_uid = $1', [adminUid]);
       }
       if (providerSeeded) await pool.query('DELETE FROM users WHERE firebase_uid = $1', [providerUid]);
+      if (customerSeeded) await pool.query('DELETE FROM users WHERE firebase_uid = $1', [customerUid]);
       await pool.query('DELETE FROM locations WHERE slug = $1', [locationSlug]);
     } finally {
       await pool.end();
@@ -136,6 +156,7 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
 
     const providerHeaders = { Authorization: 'Bearer smoke-provider-token' };
     const adminHeaders = { Authorization: 'Bearer smoke-admin-token' };
+    const customerHeaders = { Authorization: 'Bearer smoke-customer-token' };
     const created = await request(app)
       .post('/api/v1/provider-profiles')
       .set(providerHeaders)
@@ -143,6 +164,12 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
     expect(created.status).toBe(201);
     expect(created.body.profileStatus).toBe('PENDING_REVIEW');
     providerProfileId = created.body.id;
+
+    const hiddenWhilePending = await request(app)
+      .get('/api/v1/providers')
+      .set(customerHeaders);
+    expect(hiddenWhilePending.status).toBe(200);
+    expect(hiddenWhilePending.body.items).toEqual([]);
 
     const queue = await request(app)
       .get('/api/v1/admin/provider-reviews?limit=10&offset=0')
@@ -184,5 +211,35 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
     expect(finalOwnerProfile.status).toBe(200);
     expect(finalOwnerProfile.body.profileStatus).toBe('ACTIVE');
     expect(finalOwnerProfile.body.reviewNote).toBeNull();
+
+    const search = await request(app)
+      .get(
+        `/api/v1/providers?categoryId=${serviceId}&location=${encodeURIComponent(locality)}&language=en`,
+      )
+      .set(customerHeaders);
+    expect(search.status).toBe(200);
+    expect(search.body.items).toHaveLength(1);
+    expect(search.body.items[0].id).toBe(providerProfileId);
+    expect(search.body.items[0].availability).toBe('OFFLINE');
+    expect(search.body.items[0]).not.toHaveProperty('phoneNumber');
+
+    const publicProfile = await request(app)
+      .get(`/api/v1/providers/${providerProfileId}?language=en`)
+      .set(customerHeaders);
+    expect(publicProfile.status).toBe(200);
+    expect(publicProfile.body.provider.description).toBe('Updated after reviewer feedback');
+    expect(publicProfile.body.provider.workingHours).toHaveLength(7);
+    expect(publicProfile.body.provider).not.toHaveProperty('phoneNumber');
+
+    const callIntent = await request(app)
+      .post(`/api/v1/providers/${providerProfileId}/call-intent`)
+      .set(customerHeaders);
+    expect(callIntent.status).toBe(200);
+    expect(callIntent.body.phoneNumber).toBe(providerPhone);
+    const metric = await pool.query<{ call_taps: number }>(
+      'SELECT call_taps FROM provider_metrics_daily WHERE provider_id = $1::UUID',
+      [providerProfileId],
+    );
+    expect(metric.rows[0]?.call_taps).toBe(1);
   });
 });

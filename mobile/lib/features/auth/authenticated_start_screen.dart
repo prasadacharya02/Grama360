@@ -8,6 +8,7 @@ import '../admin/admin_providers.dart';
 import '../admin/admin_review_screen.dart';
 import '../onboarding/role_selection_screen.dart';
 import '../provider_registration/provider_registration_screen.dart';
+import '../discovery/provider_directory_screen.dart';
 import 'app_session.dart';
 import 'auth_providers.dart';
 
@@ -53,6 +54,9 @@ class _AuthenticatedAppContent extends ConsumerWidget {
       data: (value) {
         final roles = value.roles.toSet();
         if (roles.isEmpty) return RoleSelectionScreen(firebaseUid: firebaseUid);
+        if (roles.contains('CUSTOMER')) {
+          return ProviderDirectoryScreen(firebaseUid: firebaseUid, session: value);
+        }
         if (roles.contains('PROVIDER')) {
           return ProviderRegistrationScreen(
             firebaseUid: firebaseUid,

@@ -18,6 +18,7 @@ legacy-web/   Archived React/Vite prototype; reference only, not active product
 - **Phase 1 — Foundation:** Flutter localization shell and saved language preference; Express API scaffold; PostgreSQL/PostGIS schema, category seeds, migration runner, Docker Compose database; architecture/API documentation.
 - **Phase 2 — Authentication and roles:** Firebase Phone Auth screens, server ID-token verification, phone-account session sync, `/me`, and customer/provider role selection. Admin is not a selectable user role.
 - **Phase 3 — Provider self-registration and review:** localized service selection and profile form, optional owner-scoped Firebase Storage photo, locality/contact/experience/radius/languages/working hours, transactional PostgreSQL persistence, pending-review status, rejection notes visible to providers, and a native MFA-protected review screen backed by the admin API.
+- **Phase 4 — Customer discovery:** English/Kannada search by service and manually entered locality, approved-provider cards and safe public profiles, availability/rating summaries, and a customer-authenticated call-intent flow that opens the native phone dialer without exposing numbers in search results. Provider availability controls, favorites, reviews, and reports remain later phases.
 - Firebase project values, an enabled Storage bucket with the included rules deployed, and a deployed HTTPS API URL must be configured before OTP and provider-photo flows can run. No demo or hardcoded OTP is included.
 
 ## Requirements
@@ -27,7 +28,7 @@ legacy-web/   Archived React/Vite prototype; reference only, not active product
 - Docker Compose for local PostgreSQL/PostGIS (or a compatible PostgreSQL service)
 - Firebase project with Phone Authentication, Storage, and Identity Platform SMS MFA enabled; enable Email/Password for out-of-band staff accounts, deploy `firebase/storage.rules`, add Android SHA-1/SHA-256 fingerprints, and configure SMS regions/quotas
 
-The coding sandbox used for this work has Node.js but does not have Flutter, Dart, Docker, or PostgreSQL installed. Backend tests run here; Flutter/Android execution and applying migrations to a live database must be verified in an environment with those tools.
+The coding sandbox used for implementation has Node.js but no Flutter, Dart, Docker, or PostgreSQL, so local checks cover the backend unit suite only. GitHub Actions runs Flutter localization generation/analyze/tests and applies migrations against PostGIS; Android-device testing and live Firebase MFA/Storage flows still require project and device configuration.
 
 ## Start the API and local database
 

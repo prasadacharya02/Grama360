@@ -19,11 +19,15 @@ import { PostgresAdminReviewStore } from './modules/admin/postgres-admin-review-
 import { createProviderRouter } from './modules/providers/provider.routes.js';
 import type { ProviderStore } from './modules/providers/provider.types.js';
 import { PostgresProviderStore } from './modules/providers/postgres-provider-store.js';
+import { createProviderDirectoryRouter } from './modules/discovery/discovery.routes.js';
+import type { ProviderDirectoryStore } from './modules/discovery/discovery.types.js';
+import { PostgresProviderDirectoryStore } from './modules/discovery/postgres-provider-directory-store.js';
 
 export interface AppOptions {
   authUserStore?: AuthUserStore;
   categoryStore?: CategoryStore;
   providerStore?: ProviderStore;
+  providerDirectoryStore?: ProviderDirectoryStore;
   adminReviewStore?: AdminReviewStore;
   verifyFirebaseIdToken?: FirebaseIdTokenVerifier;
 }
@@ -60,9 +64,22 @@ export function createApp(options: AppOptions = {}) {
       },
     },
   });
+  const callIntentRateLimit = rateLimit({
+    windowMs: 15 * 60_000,
+    limit: 20,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Too many call requests. Please wait before trying again.',
+      },
+    },
+  });
 
   app.use('/api/v1', apiRateLimit);
   app.use('/api/v1/auth/session', sessionRateLimit);
+  app.use('/api/v1/providers/:providerId/call-intent', callIntentRateLimit);
 
   app.get('/api/v1/healthz', (_request, response) => {
     response.status(200).json({ status: 'ok' });
@@ -95,6 +112,16 @@ export function createApp(options: AppOptions = {}) {
     '/api/v1',
     createProviderRouter({
       store: options.providerStore ?? new PostgresProviderStore(),
+      authUserStore: authDependencies.store,
+      ...(options.verifyFirebaseIdToken
+        ? { verifyToken: options.verifyFirebaseIdToken }
+        : {}),
+    }),
+  );
+  app.use(
+    '/api/v1',
+    createProviderDirectoryRouter({
+      store: options.providerDirectoryStore ?? new PostgresProviderDirectoryStore(),
       authUserStore: authDependencies.store,
       ...(options.verifyFirebaseIdToken
         ? { verifyToken: options.verifyFirebaseIdToken }

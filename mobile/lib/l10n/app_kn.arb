@@ -43,7 +43,7 @@
   "roleSaveError": "ನಿಮ್ಮ ಆಯ್ಕೆಯನ್ನು ಉಳಿಸಲಾಗಲಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "roleReadyTitle": "ನಿಮ್ಮ ಖಾತೆ ಸಿದ್ಧವಾಗಿದೆ",
   "roleReadyMessage": "ನಿಮ್ಮ ಪಾತ್ರದ ಆಯ್ಕೆ ಉಳಿಸಲಾಗಿದೆ. ನಿಮ್ಮ ಖಾತೆಯಲ್ಲಿ ಲಭ್ಯವಿರುವ ಸೌಲಭ್ಯಗಳನ್ನು ಮುಂದುವರಿಸಿ.",
-  "customerNextPhase": "ಹತ್ತಿರದ ಸೇವೆ ಹುಡುಕುವ ಸೌಲಭ್ಯವನ್ನು ಮುಂದಿನ ಹಂತದಲ್ಲಿ ಸೇರಿಸಲಾಗುತ್ತದೆ.",
+  "customerNextPhase": "ಸೇವೆ ಮತ್ತು ಹತ್ತಿರದ ಸ್ಥಳದ ಆಧಾರದಲ್ಲಿ ಅನುಮೋದಿತ ಸೇವಾ ಒದಗಿಸುವವರನ್ನು ಹುಡುಕಿ.",
   "providerNextPhase": "ಸೇವಾ ಒದಗಿಸುವವರ ನೋಂದಣಿಯನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲನೆಗೆ ಸಲ್ಲಿಸಿ.",
   "providerLoading": "ನಿಮ್ಮ ಸೇವಾ ಪ್ರೊಫೈಲ್ ಲೋಡ್ ಆಗುತ್ತಿದೆ…",
   "providerProfileLoadError": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಲೋಡ್ ಆಗಲಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
@@ -110,7 +110,7 @@
   "providerPendingTitle": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲನೆಯಲ್ಲಿದೆ",
   "providerPendingBody": "ನಿಮ್ಮ ವಿವರಗಳನ್ನು ಸಲ್ಲಿಸಲಾಗಿದೆ. ಗ್ರಾಹಕರಿಗೆ ಕಾಣುವ ಮೊದಲು ಗ್ರಾಮ360 ತಂಡ ಪರಿಶೀಲಿಸುತ್ತದೆ.",
   "providerApprovedTitle": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಅನುಮೋದಿಸಲಾಗಿದೆ",
-  "providerApprovedBody": "ನಿಮ್ಮ ಸೇವಾ ಪ್ರೊಫೈಲ್ ಅನುಮೋದಿಸಲಾಗಿದೆ. ಗ್ರಾಹಕರ ಹುಡುಕಾಟ ಮತ್ತು ಲಭ್ಯತೆ ಸೌಲಭ್ಯಗಳನ್ನು ಮುಂದಿನ ಹಂತಗಳಲ್ಲಿ ಸೇರಿಸಲಾಗುತ್ತದೆ.",
+  "providerApprovedBody": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಅನುಮೋದನೆಯಾಗಿದೆ ಮತ್ತು ಗ್ರಾಹಕರ ಹುಡುಕಾಟದಲ್ಲಿ ಕಾಣಿಸುತ್ತದೆ. ಲಭ್ಯತೆ ನಿಯಂತ್ರಣಗಳನ್ನು ಮುಂದಿನ ನವೀಕರಣದಲ್ಲಿ ಸೇರಿಸಲಾಗುತ್ತದೆ.",
   "providerRejectedBody": "ಅನುಮೋದನೆಗೂ ಮುನ್ನ ನಿಮ್ಮ ಪ್ರೊಫೈಲ್‌ನಲ್ಲಿ ಬದಲಾವಣೆ ಅಗತ್ಯವಿದೆ. ವಿವರಗಳನ್ನು ಸರಿಪಡಿಸಿ ಮತ್ತೆ ಸಲ್ಲಿಸಿ.",
   "providerSuspendedTitle": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ತಾತ್ಕಾಲಿಕವಾಗಿ ಕಾಣಿಸುವುದಿಲ್ಲ",
   "providerSuspendedBody": "ಈಗ ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಕಾಣಿಸುವುದಿಲ್ಲ. ಸಹಾಯಕ್ಕಾಗಿ ಗ್ರಾಮ360 ತಂಡವನ್ನು ಸಂಪರ್ಕಿಸಿ.",
@@ -165,5 +165,57 @@
   "adminCancel": "ರದ್ದುಮಾಡಿ",
   "adminRejectNoteLabel": "ತಿರಸ್ಕಾರದ ಕಾರಣ",
   "adminRejectNoteHint": "ಸೇವಾ ಒದಗಿಸುವವರು ಏನು ಬದಲಾಯಿಸಬೇಕು ಎಂದು ವಿವರಿಸಿ.",
-  "adminRejectNoteRequired": "ತಿರಸ್ಕರಿಸುವ ಮೊದಲು ಸೂಚನೆ ಸೇರಿಸಿ."
+  "adminRejectNoteRequired": "ತಿರಸ್ಕರಿಸುವ ಮೊದಲು ಸೂಚನೆ ಸೇರಿಸಿ.",
+  "discoveryTitle": "ಸ್ಥಳೀಯ ಸೇವೆಗಳನ್ನು ಹುಡುಕಿ",
+  "discoveryIntro": "ಸೇವೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ; ಗ್ರಾಮ, ಪಟ್ಟಣ ಅಥವಾ ಜಿಲ್ಲೆಯಲ್ಲಿ ಹುಡುಕಿ.",
+  "discoveryQueryLabel": "ಸೇವೆ ಅಥವಾ ಸೇವೆ ನೀಡುವವರು",
+  "discoveryQueryHint": "ಉದಾಹರಣೆಗೆ, ಎಲೆಕ್ಟ್ರಿಷಿಯನ್",
+  "discoveryLocationLabel": "ಗ್ರಾಮ, ಪಟ್ಟಣ ಅಥವಾ ಜಿಲ್ಲೆ",
+  "discoveryLocationHint": "ಉದಾಹರಣೆಗೆ, ಹುಬ್ಬಳ್ಳಿ",
+  "discoveryCategoryLabel": "ಸೇವೆಯ ವಿಧ",
+  "discoveryAllServices": "ಎಲ್ಲಾ ಸೇವೆಗಳು",
+  "discoverySearchButton": "ಸೇವಾ ಒದಗಿಸುವವರನ್ನು ಹುಡುಕಿ",
+  "discoverySearching": "ಹತ್ತಿರದ ಸೇವಾ ಒದಗಿಸುವವರನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ…",
+  "discoverySearchError": "ಸೇವಾ ಒದಗಿಸುವವರನ್ನು ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "discoveryNoResults": "ಅನುಮೋದಿಸಿದ ಸೇವಾ ಒದಗಿಸುವವರು ಸಿಗಲಿಲ್ಲ. ಬೇರೆ ಸೇವೆ ಅಥವಾ ಹತ್ತಿರದ ಸ್ಥಳ ಹುಡುಕಿ.",
+  "discoveryAvailableStatus": "ಲಭ್ಯವಿದ್ದಾರೆ",
+  "discoveryBusyStatus": "ಕೆಲಸದಲ್ಲಿದ್ದಾರೆ",
+  "discoveryOfflineStatus": "ಈಗ ಲಭ್ಯವಿಲ್ಲ",
+  "discoveryLocationHeading": "ಸೇವಾ ಪ್ರದೇಶ",
+  "discoveryServicesHeading": "ಸೇವೆಗಳು",
+  "discoveryExperience": "{years} ವರ್ಷಗಳ ಅನುಭವ",
+  "@discoveryExperience": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      }
+    }
+  },
+  "discoveryServiceRadius": "{radius} ಕಿ.ಮೀ.ವರೆಗೆ ಪ್ರಯಾಣಿಸುತ್ತಾರೆ",
+  "@discoveryServiceRadius": {
+    "placeholders": {
+      "radius": {
+        "type": "String"
+      }
+    }
+  },
+  "discoveryHoursHeading": "ಸಾಮಾನ್ಯ ಕೆಲಸದ ಸಮಯ",
+  "discoveryClosed": "ಮುಚ್ಚಿರುತ್ತದೆ",
+  "discoveryCallButton": "ಸೇವಾ ಒದಗಿಸುವವರಿಗೆ ಕರೆಮಾಡಿ",
+  "discoveryCallError": "ಫೋನ್ ಕರೆ ಪರದೆಯನ್ನು ತೆರೆಯಲಾಗಲಿಲ್ಲ. ಸಾಧನ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "discoveryRatingSummary": "{rating} ನಕ್ಷತ್ರಗಳು · {count} ವಿಮರ್ಶೆಗಳು",
+  "@discoveryRatingSummary": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discoveryNoReviews": "ಇನ್ನೂ ಗ್ರಾಹಕರ ವಿಮರ್ಶೆಗಳಿಲ್ಲ",
+  "discoveryProviderProfileError": "ಈ ಸೇವಾ ಒದಗಿಸುವವರ ವಿವರ ಲೋಡ್ ಆಗಲಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "discoveryProviderModeTooltip": "ನನ್ನ ಸೇವಾ ಪ್ರೊಫೈಲ್",
+  "loadMore": "ಇನ್ನಷ್ಟು ತೋರಿಸಿ"
 }

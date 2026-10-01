@@ -1,6 +1,6 @@
 # Grama360 database design
 
-PostgreSQL is the source of truth for application data. `001_initial_schema.sql` defines the core schema, `002_seed_service_categories.sql` adds the initial localized category tree, and `003_provider_registration.sql` enables language-specific manual locality labels and an optional secondary phone. The runner records applied files in `schema_migrations` and applies each migration transactionally.
+PostgreSQL is the source of truth for application data. `001_initial_schema.sql` defines the core schema, `002_seed_service_categories.sql` adds the initial localized category tree, `003_provider_registration.sql` enables language-specific manual locality labels and an optional secondary phone, and `004_provider_discovery_search_indexes.sql` adds trigram indexes for text-based service-area search. The runner records applied files in `schema_migrations` and applies each migration transactionally.
 
 ## ER diagram
 

@@ -47,9 +47,7 @@ mobile/lib/
 └── features/
     ├── auth/               # Phase 2
     ├── onboarding/         # language selection foundation
-    ├── customer_home/
-    ├── categories/
-    ├── discovery/
+    ├── discovery/          # Phase 4: service/locality search, profiles, calling
     ├── provider_profile/
     ├── provider_registration/
     ├── provider_dashboard/
@@ -75,13 +73,13 @@ backend/src/
 └── shared/                 # common errors and API types
 ```
 
-`/api/v1/healthz` is a liveness check. `/api/v1/readyz` checks the configured database. Phase 2 implements Firebase ID-token verification, `POST /api/v1/auth/session`, `GET /api/v1/me`, and `PUT /api/v1/me/roles`. Phase 3 implements localized categories, provider self-registration (`GET/POST/PATCH /provider-profiles`), and a minimal MFA-protected admin review queue/decision API; customer discovery and broader admin management remain later phases.
+`/api/v1/healthz` is a liveness check. `/api/v1/readyz` checks the configured database. Phase 2 implements Firebase ID-token verification, `POST /api/v1/auth/session`, `GET /api/v1/me`, and `PUT /api/v1/me/roles`. Phase 3 implements localized categories, provider self-registration (`GET/POST/PATCH /provider-profiles`), and a minimal MFA-protected admin review queue/decision API. Phase 4 adds customer-only service/locality search, public-safe profiles, and the protected call-intent flow; broader customer and admin workflows remain later phases.
 
 ## Important behavior and privacy decisions
 
 - A user may have customer and provider roles. Only a backend-admin-provisioned `admin_users` record grants admin access; the app cannot promote itself.
 - A new provider submission is stored as `PENDING_REVIEW` in a PostgreSQL transaction and gets a pending Grama360 verification record. Only `ACTIVE` profiles are searchable. Providers may edit `DRAFT` or `REJECTED` profiles and resubmit; pending, active, and suspended profiles are locked. Phone OTP does not grant the manual Grama360 badge.
-- OFFLINE providers retain profiles but are excluded from “available now” results by default. BUSY can be shown distinctly.
+- Discovery lists only approved, active provider accounts, sorts AVAILABLE providers first, and visibly labels AVAILABLE, BUSY, and OFFLINE. Provider self-service availability controls are not implemented yet, so newly approved providers begin OFFLINE.
 - Search responses omit provider phone numbers. A protected call-intent endpoint returns the number only after the customer taps Call and logs a **tap**, not a completed call. Android opens the system dialer; masking requires a future call-relay service.
 - Location coordinates represent an approximate village/town centroid, not a provider's home. GPS is never mandatory.
 - Reviews are one per authenticated customer/provider pair for MVP, editable through policy, rate-limited and reportable. Without booking, the app cannot prove a service took place.
@@ -93,14 +91,12 @@ backend/src/
 1. **Foundation:** Flutter structure, localization, API skeleton, PostgreSQL schema/migrations.
 2. **Authentication/roles:** Firebase OTP, token verification, account sync, role selection, protected routes.
 3. **Provider registration (implemented):** localized provider form, category selection, optional owner-scoped photo, locality/contact/experience/radius/languages/working hours, transactional persistence, pending-review status, and a minimal MFA-protected review API.
-4. **Customer home/categories:** localized category browsing and simple home.
-5. **Discovery:** Kannada/English search, village and availability filters, pagination.
-6. **Profiles/calling:** details, protected call intent, native dialer.
-7. **Availability/location:** status updates, optional GPS and PostGIS radius query.
-8. **Reviews/favorites/reports:** authenticated customer workflows and moderation states.
-9. **Admin:** the native provider-review UI and approve/reject API are implemented. Broader provider/category/report/review/user management, metrics, and audit browsing are planned.
-10. **Hardening:** tests, authorization/security review, accessibility, low-bandwidth and query tuning.
-11. **Android release:** signed APK/AAB guidance and installation validation.
+4. **Customer discovery (implemented):** English/Kannada category and locality search, paginated approved-provider cards, availability/rating summaries, safe public profiles, and protected call intent that opens the native dialer.
+5. **Availability and location:** provider-controlled AVAILABLE/BUSY/OFFLINE state, optional GPS and PostGIS radius search; no exact household coordinates.
+6. **Customer actions:** favorites, review submission/editing, provider reports, and moderation workflows.
+7. **Admin:** the native provider-review UI and approve/reject API are implemented. Broader provider/category/report/review/user management, metrics, and audit browsing are planned.
+8. **Hardening:** tests, authorization/security review, accessibility, low-bandwidth and query tuning.
+9. **Android release:** signed APK/AAB guidance and installation validation.
 
 ## Local developer setup
 

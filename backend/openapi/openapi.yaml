@@ -234,7 +234,8 @@ paths:
           description: Provider is no longer pending or has an inconsistent verification state.
   /providers:
     get:
-      summary: Search active providers with pagination.
+      summary: Search approved providers by service, text, and locality.
+      description: Requires a signed-in account with the CUSTOMER role. Search and profile responses never contain a contact phone number.
       parameters:
         - in: query
           name: categoryId
@@ -242,27 +243,78 @@ paths:
             type: string
             format: uuid
         - in: query
-          name: locationId
+          name: q
+          description: Provider, business, or service text; case-insensitive and supports English or Kannada.
           schema:
             type: string
-            format: uuid
+            maxLength: 100
         - in: query
-          name: availability
+          name: location
+          description: Matches a village/locality, taluk, or district in either stored language.
           schema:
             type: string
-            enum: [AVAILABLE, BUSY, OFFLINE]
+            maxLength: 100
+        - in: query
+          name: language
+          schema:
+            type: string
+            enum: [en, kn]
+            default: en
         - in: query
           name: limit
           schema:
             type: integer
             minimum: 1
             maximum: 50
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
+            default: 0
       responses:
         '200':
-          description: Provider page; phone numbers are not included.
+          description: Localized provider page with availability and aggregate review rating; no contact number.
+        '400':
+          description: One or more search filters are invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
+  /providers/{providerId}:
+    get:
+      summary: Get an approved provider's public profile.
+      description: Returns localized services, service area, availability, working hours and aggregate rating; never includes contact details.
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: language
+          schema:
+            type: string
+            enum: [en, kn]
+            default: en
+      responses:
+        '200':
+          description: Public-safe provider profile.
+        '400':
+          description: Provider ID or language is invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
+        '404':
+          description: Provider is not approved or available.
   /providers/{providerId}/call-intent:
     post:
-      summary: Record a call-button tap and return a number for the Android dialer.
+      summary: Record a call-button tap and return the verified number for the Android dialer.
+      description: Requires the CUSTOMER role. The API rechecks active provider status and returns the number only to this authenticated call action. A tap is not evidence that a call completed.
       parameters:
         - in: path
           name: providerId
@@ -272,9 +324,15 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Call intent created; does not mean the call completed.
+          description: Call intent recorded; contains a phone number for launching the native dialer.
+        '400':
+          description: Provider ID is invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
         '404':
-          description: Provider not available for contact.
+          description: Provider is not active or available for contact.
 components:
   securitySchemes:
     FirebaseBearer:

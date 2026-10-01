@@ -1,6 +1,6 @@
 # Grama360 REST API plan
 
-Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Authorization: Bearer <Firebase ID token>`; Express verifies the token with Firebase Admin and resolves app roles from PostgreSQL. OTP verification is performed by the Firebase mobile SDK, not by a custom OTP endpoint. Phase 2 implements `POST /auth/session`, `GET /me`, and `PUT /me/roles`. Phase 3 implements localized category listing, provider self-registration, and a minimal MFA-protected provider-review API; remaining endpoints below are planned for later phases.
+Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Authorization: Bearer <Firebase ID token>`; Express verifies the token with Firebase Admin and resolves app roles from PostgreSQL. OTP verification is performed by the Firebase mobile SDK, not by a custom OTP endpoint. Phase 2 implements `POST /auth/session`, `GET /me`, and `PUT /me/roles`. Phase 3 implements localized category listing, provider self-registration, and a minimal MFA-protected provider-review API. Phase 4 implements customer provider search, safe public profiles, and an authenticated call-intent endpoint; other endpoints below are planned for later phases.
 
 ## Authentication and account
 
@@ -16,10 +16,11 @@ Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Autho
 | Method / path | Access | Purpose |
 |---|---|---|
 | `GET /categories?language=kn` | Read | Implemented. Returns active categories with English or Kannada names and parent IDs. `language` defaults to `en`; other values receive `400 INVALID_LANGUAGE`. |
-| `GET /locations/search?q=...&district=...` | Read | Paginated manual village/town/area lookup. |
-| `GET /providers?categoryId=&q=&locationId=&availability=&lat=&lng=&radiusKm=&cursor=&limit=` | Authenticated customer | Paginated discovery. GPS parameters are optional; omit unavailable filters rather than requiring permission. |
-| `GET /providers/:providerId` | Authenticated customer | Public-safe profile, verification level, availability and aggregate ratings; no phone number. |
-| `GET /providers/:providerId/reviews?cursor=&limit=` | Authenticated customer | Paginated visible reviews. |
+| `GET /locations/search?q=...&district=...` | Read | Planned paginated manual village/town/area lookup. |
+| `GET /providers?categoryId=&q=&location=&language=&limit=&offset=` | Authenticated customer | Implemented. Filters approved providers by active service category, provider/service text, and locality/taluk/district text. Returns up to 50 results per page, localized names, availability, aggregate ratings, and no contact number. |
+| `GET /providers/:providerId?language=` | Authenticated customer | Implemented. Returns an approved provider's safe public profile, service area, availability, schedule and aggregate ratings; never returns a phone number. |
+| `POST /providers/:providerId/call-intent` | Authenticated customer | Implemented. Records an aggregate daily call tap and returns the verified phone number for the native dialer; this is not evidence of a completed call. |
+| `GET /providers/:providerId/reviews?cursor=&limit=` | Authenticated customer | Planned paginated visible reviews. |
 
 ## Provider self-service
 
@@ -31,7 +32,6 @@ Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Autho
 | `PUT /provider-profiles/me/services` | Provider | Replace own selected service categories transactionally. |
 | `PUT /provider-profiles/me/working-hours` | Provider | Replace weekly working hours after validation. |
 | `PATCH /provider-profiles/me/availability` | Provider | Change own state to `AVAILABLE`, `BUSY`, or `OFFLINE`. |
-| `POST /providers/:providerId/call-intent` | Authenticated customer | Record a tap and return a number only for native dialer launch; response is not evidence of a completed call. |
 
 Provider registration requires one to five unique active service IDs, one to three spoken languages (`kn`, `en`, `tcy`), a complete seven-day schedule (weekday 0 is Sunday and 6 is Saturday) with at least one open day, a 1–200 km service radius, 0–80 years of experience, and locality/district labels entered in English or Kannada. The verified Firebase phone is the primary contact; an optional secondary phone must be a different E.164 number. The API derives the owner from the token, checks the provider role in PostgreSQL again inside the transaction, and never accepts a user ID or review status from the body. Manually entered locality/taluk/district names are stored in the language supplied; no exact household coordinates are collected.
 
@@ -68,6 +68,6 @@ Admin requests require a verified Firebase identity, an enabled `admin_users` ro
 
 - JSON errors use `{ "error": { "code": "...", "message": "..." } }`; no stack traces or sensitive database details are returned in production.
 - Inputs are validated with Zod, list endpoints enforce maximum page sizes, and SQL uses parameterized values.
-- All `/api/v1` routes have a shared rate limit; session synchronization has an additional limiter. Per-action limits for reports, reviews, call-intent, and admin mutations remain a pre-deployment hardening task.
-- Public category, search, and provider-profile payloads do not expose contact phone numbers. The owner-only `GET /provider-profiles/me` response includes that provider's optional secondary number for editing and the latest provider-facing review note; the verified primary number remains sourced from the signed-in session.
+- All `/api/v1` routes have a shared rate limit; session synchronization and call-intent each have additional IP-based limits. Per-user limits for reports, reviews, and admin mutations remain a pre-deployment hardening task.
+- Search and public-profile responses never expose contact phone numbers. The customer-authenticated call-intent endpoint rechecks that the provider and account are active, increments an aggregate daily tap counter, and then returns only the verified primary number for a native dialer launch. It does not record whether a call was completed. The owner-only `GET /provider-profiles/me` response includes the provider's optional secondary number for editing and latest review note; the verified primary number remains sourced from the signed-in session.
 - `GET /healthz` is liveness; `GET /readyz` requires PostgreSQL readiness. Neither reveals environment details.
