@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/network/api_client.dart';
+import '../auth/auth_providers.dart';
 import 'discovery_models.dart';
 import 'discovery_repository.dart';
 
