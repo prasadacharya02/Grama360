@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.5
+    container_name: grama360-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: grama360
+      POSTGRES_USER: grama360
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-grama360_dev_only}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - grama360_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grama360 -d grama360"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  grama360_postgres_data:
