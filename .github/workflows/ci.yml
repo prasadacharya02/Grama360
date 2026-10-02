@@ -1,0 +1,99 @@
+name: Grama360 CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck API source
+        run: npm run typecheck
+      - name: Typecheck tests
+        run: npm run typecheck:tests
+      - name: Run unit and route tests
+        run: npm test
+      - name: Build API
+        run: npm run build
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+  postgres-e2e:
+    name: PostGIS migrations and provider review flow
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.5
+        env:
+          POSTGRES_DB: grama360
+          POSTGRES_USER: grama360
+          POSTGRES_PASSWORD: grama360_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U grama360 -d grama360"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql://grama360:grama360_ci_only@127.0.0.1:5432/grama360
+      RUN_DB_SMOKE: 'true'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply PostgreSQL/PostGIS migrations
+        run: npm run db:migrate
+      - name: Exercise provider registration and admin review against PostgreSQL
+        run: npm run test:db
+
+  mobile:
+    name: Flutter analysis and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Flutter stable
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve Flutter packages
+        run: flutter pub get
+      - name: Generate English and Kannada localizations
+        run: flutter gen-l10n
+      - name: Analyze Flutter app
+        run: flutter analyze
+      - name: Run Flutter tests
+        run: flutter test

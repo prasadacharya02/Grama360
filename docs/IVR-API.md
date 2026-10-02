@@ -1,68 +1,28 @@
-# Grama360 — API-First Design for Call Center & IVR Integration
+# Future IVR and WhatsApp integration
 
-## Vision
+The mobile app, a future WhatsApp bot, and any future call-center/IVR service will use the same Node/Express API and PostgreSQL provider records. Channel integrations must **not** connect directly to PostgreSQL or embed privileged credentials.
 
-Grama360 is not just a smartphone app. It is a rural service database designed to be accessed by:
+## Future flow
 
-- **Smartphone users** (this React MVP)
-- **WhatsApp users** (future bot)
-- **Call-center operators** (future web dashboard)
-- **IVR / Voice systems** (future automated phone system)
+1. Receive a Kannada/English request (for example, `ನನಗೆ ಆಟೋ ಬೇಕು`).
+2. Map the request to an active service category and ask for a village/locality if needed.
+3. Call the shared provider-discovery API with category, locality, availability, and pagination filters.
+4. Return only the minimum contact details required for the channel and obtain customer consent before connecting a call.
+5. Log channel/action metadata without recording call content or exposing unnecessary personal data.
 
-## Database Access Pattern
+The API contract is tracked in [api.md](api.md). Relevant endpoints include:
 
-All channels access the same relational data. Example query for a Kannada caller asking `"ನನಗೆ ಆಟೋ ಬೇಕು"` (I need an auto):
-
-```sql
-SELECT * FROM provider_profiles
-JOIN service_categories ON provider_profiles.category_id = service_categories.id
-WHERE service_categories.kannada_name LIKE '%ಆಟೋ%'
-  AND provider_profiles.availability_status = 'AVAILABLE_NOW'
-  AND provider_profiles.village = 'Kanakapura';
+```text
+GET  /api/v1/categories?language=kn
+GET  /api/v1/locations/search?q=...
+GET  /api/v1/providers?categoryId=...&locationId=...&availability=AVAILABLE
+POST /api/v1/providers/{providerId}/call-intent
 ```
 
-## Call Center Workflow (Future)
+The call-intent endpoint is designed for an authenticated app user. An IVR or operator channel should receive a separate service identity and a narrowly scoped contact workflow rather than reusing an end-user token or querying phone numbers directly.
 
-1. **Incoming Call**: Customer calls Grama360 toll-free number.
-2. **Language Detection**: Operator asks: `"ನೀವು ಯಾವ ಸೇವೆ ಬಯಸುತ್ತಿದ್ದೀರಿ?"` (Which service do you want?)
-3. **Voice Search**: Customer responds: `"ಆಟೋ"` (Auto).
-4. **Location Filter**: Operator asks: `"ನೀವು ಯಾವ ಗ್ರಾಮದಲ್ಲಿದ್ದೀರಿ?"` (Which village are you in?)
-5. **DB Query**: Operator runs the search on the admin dashboard.
-6. **Result Readback**: `"ಶಿವಣ್ಣ, ಆಟೋ ಚಾಲಕ, ಕನಕಪುರ, ಲಭ್ಯ. ಫೋನ್: 98765 43211"`
+## Not part of MVP
 
-## IVR Automation Path (Future)
-
-```typescript
-// Example automated flow
-const query = parseKannadaVoice(input); // "ನನಗೆ ಆಟೋ ಬೇಕು"
-const category = mapKeyword(query, 'auto');
-const providers = await fetch(
-  `/api/providers?category=${category}&available=AVAILABLE_NOW`
-);
-const best = providers.sort((a,b) => b.rating - a.rating)[0];
-playAudioInKannada(`
-  ${best.village} ನಲ್ಲಿ ${best.name} ಲಭ್ಯ. 
-  ಕರೆ ಮಾಡಿ ${best.phoneNumber}
-`);
-```
-
-## Key Design Decisions for Multi-Channel Support
-
-- **No email required**: Phone number is the universal identity across mobile, WhatsApp, and voice.
-- **Category table with Kannada names**: Enables voice mapping (`"ಆಟೋ"` → `category.id='auto'`).
-- **Availability status real-time**: Call-center operators must know if a provider is truly available before connecting the customer.
-- **Verification badges**: Operators and automated systems can filter out unverified profiles to protect customers from fraud.
-- **Report tracking**: Suspicious profiles flagged by mobile users can be reviewed by operators before they receive more calls.
-
-## WhatsApp Integration (Future)
-
-A WhatsApp bot can use the same REST endpoints:
-
-```typescript
-// Incoming WhatsApp message: "auto Kanakapura"
-const [category, village] = message.split(' ');
-const results = await fetch(`/api/providers?category=${category}&village=${village}`);
-await sendWhatsAppReply(formatResults(results));
-```
-
-This architecture ensures that whether a user connects via smartphone, WhatsApp, a voice call, or a future native mobile app, the underlying service database remains identical.
+- No IVR, call-center UI, call recording, speech recognition, or WhatsApp integration is implemented yet; those remain future integrations after the shared APIs mature.
+- The future voice system can translate phrases such as `ಆಟೋ` into category search, but language parsing is not a dependency of the database or mobile app.
+- No caller should be promised a completed booking; Grama360 MVP discovery ends at the customer/provider contact handoff.

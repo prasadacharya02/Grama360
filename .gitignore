@@ -1,0 +1,35 @@
+# Flutter / Dart
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/build/
+mobile/android/local.properties
+mobile/android/app/google-services.json
+mobile/firebase.local.json
+mobile/firebase.*.local.json
+mobile/ios/Flutter/Generated.xcconfig
+mobile/ios/Flutter/flutter_export_environment.sh
+*.jks
+*.keystore
+
+# Node / TypeScript
+**/node_modules/
+**/dist/
+backend/coverage/
+*.tsbuildinfo
+
+# Local configuration and credentials
+.env
+.env.*
+!**/.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+**/secrets/
+*service-account*.json
+
+# Logs and editor files
+*.log
+.DS_Store
+.idea/
+.vscode/
