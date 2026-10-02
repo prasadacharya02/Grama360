@@ -20,6 +20,13 @@ final providerSearchProvider = FutureProvider.autoDispose
   (ref, request) => ref.watch(providerDirectoryRepositoryProvider).search(request),
 );
 
+final providerReviewsProvider = FutureProvider.autoDispose
+    .family<ProviderReviewPage, String>(
+  (ref, providerId) => ref
+      .watch(providerDirectoryRepositoryProvider)
+      .loadReviews(providerId: providerId),
+);
+
 final publicProviderProfileProvider = FutureProvider.autoDispose
     .family<PublicProviderProfile, ({String providerId, String languageCode})>(
   (ref, request) => ref.watch(providerDirectoryRepositoryProvider).loadProfile(

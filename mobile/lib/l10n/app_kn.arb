@@ -231,6 +231,30 @@
     }
   },
   "discoveryNoReviews": "ಇನ್ನೂ ಗ್ರಾಹಕರ ವಿಮರ್ಶೆಗಳಿಲ್ಲ",
+  "reviewHeading": "ಗ್ರಾಹಕರ ವಿಮರ್ಶೆಗಳು",
+  "reviewWriteButton": "ವಿಮರ್ಶೆ ಬರೆಯಿರಿ",
+  "reviewEditButton": "ನಿಮ್ಮ ವಿಮರ್ಶೆಯನ್ನು ತಿದ್ದು",
+  "reviewYourReview": "ನಿಮ್ಮ ವಿಮರ್ಶೆ",
+  "reviewRatingLabel": "ನಿಮ್ಮ ರೇಟಿಂಗ್",
+  "reviewRatingValue": "{rating} / 5 ನಕ್ಷತ್ರಗಳು",
+  "@reviewRatingValue": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewTextLabel": "ವಿಮರ್ಶೆ (ಐಚ್ಛಿಕ)",
+  "reviewTextHint": "ಉಪಯುಕ್ತವಾದ ಅಭಿಪ್ರಾಯ ಹಂಚಿಕೊಳ್ಳಿ (ಗರಿಷ್ಠ 1,500 ಅಕ್ಷರಗಳು).",
+  "reviewSubmitButton": "ವಿಮರ್ಶೆ ಸಲ್ಲಿಸಿ",
+  "reviewSaveChanges": "ಬದಲಾವಣೆ ಉಳಿಸಿ",
+  "reviewSaving": "ವಿಮರ್ಶೆ ಉಳಿಸಲಾಗುತ್ತಿದೆ…",
+  "reviewSaved": "ನಿಮ್ಮ ವಿಮರ್ಶೆ ಸಲ್ಲಿಸಲಾಗಿದೆ.",
+  "reviewUpdated": "ನಿಮ್ಮ ವಿಮರ್ಶೆ ನವೀಕರಿಸಲಾಗಿದೆ.",
+  "reviewSaveError": "ವಿಮರ್ಶೆ ಉಳಿಸಲಾಗಲಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "reviewLoadError": "ವಿಮರ್ಶೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗಲಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  "reviewEmpty": "ಇನ್ನೂ ಗ್ರಾಹಕರ ವಿಮರ್ಶೆಗಳಿಲ್ಲ.",
+  "reviewNotEditable": "ಈ ವಿಮರ್ಶೆಯನ್ನು ಈಗ ತಿದ್ದುಪಡಿ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
   "discoveryProviderProfileError": "ಈ ಸೇವಾ ಒದಗಿಸುವವರ ವಿವರ ಲೋಡ್ ಆಗಲಿಲ್ಲ. ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "discoveryProviderModeTooltip": "ನನ್ನ ಸೇವಾ ಪ್ರೊಫೈಲ್",
   "loadMore": "ಇನ್ನಷ್ಟು ತೋರಿಸಿ"

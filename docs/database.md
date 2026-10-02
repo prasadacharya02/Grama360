@@ -42,7 +42,7 @@ provider_profiles 1 ─── * provider_metrics_daily
 | `working_hours` | At most one weekly row per weekday; closed days have no open/close times. |
 | `provider_languages` | Spoken language codes, including Kannada, English, and Tulu. |
 | `verification_records` | Grama360 review history; an approval requires an admin and review timestamp. Phone verification is separate. |
-| `reviews` | 1–5 rating, optional text, moderation status; unique `(provider_id, customer_user_id)` prevents duplicate reviewer rows. |
+| `reviews` | 1–5 rating, optional text capped at 1,500 characters, visibility/moderation status; unique `(provider_id, customer_user_id)` prevents duplicate reviewer rows. Customer APIs recheck active customer/provider roles, account and profile state, and at least one active service category in PostgreSQL. Public review queries return visible rows with a safe reviewer display label and no phone fields. |
 | `favorites` | Composite primary key prevents duplicate saves. |
 | `reports` | Reason, optional description, state, assigned admin and resolution. Rate limits are enforced by the API. |
 | `admin_audit_logs` | Who performed an admin action, target, timestamp and non-sensitive metadata. Never store credentials or unnecessary phone data here. |

@@ -82,10 +82,15 @@ class ProviderSearchRequest {
 }
 
 class ProviderDiscoveryPage {
-  const ProviderDiscoveryPage({required this.items, required this.hasMore});
+  const ProviderDiscoveryPage({
+    required this.items,
+    required this.hasMore,
+    this.nextCursor,
+  });
 
   final List<PublicProviderSummary> items;
   final bool hasMore;
+  final String? nextCursor;
 
   factory ProviderDiscoveryPage.fromJson(Object? value) {
     final json = _asMap(value, 'provider search');
@@ -96,6 +101,109 @@ class ProviderDiscoveryPage {
     return ProviderDiscoveryPage(
       items: items.map(PublicProviderSummary.fromJson).toList(growable: false),
       hasMore: json['hasMore'] as bool,
+      nextCursor: _optionalString(json['nextCursor'], 'nextCursor'),
+    );
+  }
+}
+
+class PublicProviderReview {
+  const PublicProviderReview({
+    required this.id,
+    required this.rating,
+    required this.reviewText,
+    required this.reviewerDisplayName,
+    required this.createdAt,
+    required this.isMine,
+  });
+
+  final String id;
+  final int rating;
+  final String? reviewText;
+  final String reviewerDisplayName;
+  final String createdAt;
+  final bool isMine;
+
+  factory PublicProviderReview.fromJson(Object? value) {
+    final json = _asMap(value, 'provider review');
+    final rawRating = _requiredNumber(json['rating'], 'rating');
+    final rating = rawRating.toInt();
+    if (rawRating != rating || rating < 1 || rating > 5 || json['isMine'] is! bool) {
+      throw const FormatException('The provider review response is invalid.');
+    }
+    return PublicProviderReview(
+      id: _requiredString(json, 'id'),
+      rating: rating,
+      reviewText: _optionalString(json['reviewText'], 'reviewText'),
+      reviewerDisplayName: _requiredString(json, 'reviewerDisplayName'),
+      createdAt: _requiredString(json, 'createdAt'),
+      isMine: json['isMine'] as bool,
+    );
+  }
+}
+
+class CustomerProviderReview {
+  const CustomerProviderReview({
+    required this.id,
+    required this.rating,
+    required this.reviewText,
+    required this.moderationStatus,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  final String id;
+  final int rating;
+  final String? reviewText;
+  final String moderationStatus;
+  final String createdAt;
+  final String updatedAt;
+
+  factory CustomerProviderReview.fromJson(Object? value) {
+    final json = _asMap(value, 'your review');
+    final rawRating = _requiredNumber(json['rating'], 'rating');
+    final rating = rawRating.toInt();
+    final status = _requiredString(json, 'moderationStatus');
+    if (rawRating != rating || rating < 1 || rating > 5 ||
+        !const {'VISIBLE', 'HIDDEN', 'PENDING'}.contains(status)) {
+      throw const FormatException('Your review response is invalid.');
+    }
+    return CustomerProviderReview(
+      id: _requiredString(json, 'id'),
+      rating: rating,
+      reviewText: _optionalString(json['reviewText'], 'reviewText'),
+      moderationStatus: status,
+      createdAt: _requiredString(json, 'createdAt'),
+      updatedAt: _requiredString(json, 'updatedAt'),
+    );
+  }
+}
+
+class ProviderReviewPage {
+  const ProviderReviewPage({
+    required this.items,
+    required this.hasMore,
+    required this.nextCursor,
+    required this.myReview,
+  });
+
+  final List<PublicProviderReview> items;
+  final bool hasMore;
+  final String? nextCursor;
+  final CustomerProviderReview? myReview;
+
+  factory ProviderReviewPage.fromJson(Object? value) {
+    final json = _asMap(value, 'provider reviews');
+    final items = json['items'];
+    if (items is! List || json['hasMore'] is! bool) {
+      throw const FormatException('The provider reviews response is incomplete.');
+    }
+    return ProviderReviewPage(
+      items: items.map(PublicProviderReview.fromJson).toList(growable: false),
+      hasMore: json['hasMore'] as bool,
+      nextCursor: _optionalString(json['nextCursor'], 'nextCursor'),
+      myReview: json['myReview'] == null
+          ? null
+          : CustomerProviderReview.fromJson(json['myReview']),
     );
   }
 }

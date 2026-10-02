@@ -31,17 +31,56 @@ class ProviderDirectoryRepository {
   Future<ProviderDiscoveryPage> loadFavorites({
     required String languageCode,
     int limit = 20,
-    int offset = 0,
+    String? cursor,
   }) async {
     final response = await _dio.get<Object?>(
       'me/favorites',
       queryParameters: {
         'language': languageCode,
         'limit': limit,
-        'offset': offset,
+        if (cursor != null) 'cursor': cursor,
       },
     );
     return ProviderDiscoveryPage.fromJson(response.data);
+  }
+
+  Future<ProviderReviewPage> loadReviews({
+    required String providerId,
+    int limit = 20,
+    String? cursor,
+  }) async {
+    final response = await _dio.get<Object?>(
+      'providers/$providerId/reviews',
+      queryParameters: {
+        'limit': limit,
+        if (cursor != null) 'cursor': cursor,
+      },
+    );
+    return ProviderReviewPage.fromJson(response.data);
+  }
+
+  Future<CustomerProviderReview> createReview({
+    required String providerId,
+    required int rating,
+    String? reviewText,
+  }) async {
+    final response = await _dio.post<Object?>(
+      'providers/$providerId/reviews',
+      data: _reviewPayload(rating, reviewText),
+    );
+    return _parseCustomerReview(response.data);
+  }
+
+  Future<CustomerProviderReview> updateReview({
+    required String reviewId,
+    required int rating,
+    String? reviewText,
+  }) async {
+    final response = await _dio.patch<Object?>(
+      'reviews/$reviewId',
+      data: _reviewPayload(rating, reviewText),
+    );
+    return _parseCustomerReview(response.data);
   }
 
   Future<bool> setFavorite({
@@ -80,6 +119,16 @@ class ProviderDirectoryRepository {
     }
     return phoneNumber;
   }
+}
+
+Map<String, Object?> _reviewPayload(int rating, String? reviewText) => {
+      'rating': rating,
+      'reviewText': reviewText?.trim().isNotEmpty == true ? reviewText!.trim() : null,
+    };
+
+CustomerProviderReview _parseCustomerReview(Object? value) {
+  final data = _asMap(value, 'review update');
+  return CustomerProviderReview.fromJson(data['review']);
 }
 
 Map<String, dynamic> _asMap(Object? value, String label) {

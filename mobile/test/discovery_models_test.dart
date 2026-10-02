@@ -73,6 +73,53 @@ void main() {
     expect(page.hasMore, isTrue);
   });
 
+  test('parses a public review page without exposing phone numbers', () {
+    final page = ProviderReviewPage.fromJson({
+      'items': [
+        {
+          'id': '44444444-4444-4444-8444-444444444444',
+          'rating': 4,
+          'reviewText': 'Quick and helpful.',
+          'reviewerDisplayName': 'Lakshmi',
+          'createdAt': '2026-10-01T10:00:00.000Z',
+          'isMine': false,
+          'phoneNumber': '+919876543210',
+        },
+      ],
+      'hasMore': true,
+      'nextCursor': 'opaque-cursor',
+      'myReview': {
+        'id': '55555555-5555-4555-8555-555555555555',
+        'rating': 5,
+        'reviewText': null,
+        'moderationStatus': 'VISIBLE',
+        'createdAt': '2026-10-01T10:00:00.000Z',
+        'updatedAt': '2026-10-01T10:00:00.000Z',
+      },
+    });
+
+    expect(page.items.single.reviewerDisplayName, 'Lakshmi');
+    expect(page.items.single.rating, 4);
+    expect(page.items.single.isMine, isFalse);
+    expect(page.nextCursor, 'opaque-cursor');
+    expect(page.myReview?.rating, 5);
+    expect(page.myReview?.moderationStatus, 'VISIBLE');
+  });
+
+  test('rejects ratings outside whole-number one-through-five bounds', () {
+    expect(
+      () => PublicProviderReview.fromJson({
+        'id': '44444444-4444-4444-8444-444444444444',
+        'rating': 4.5,
+        'reviewText': null,
+        'reviewerDisplayName': 'Lakshmi',
+        'createdAt': '2026-10-01T10:00:00.000Z',
+        'isMine': false,
+      }),
+      throwsFormatException,
+    );
+  });
+
   test('parses provider hours and nullable rating on the public profile', () {
     final profile = PublicProviderProfile.fromJson({
       'id': providerId,

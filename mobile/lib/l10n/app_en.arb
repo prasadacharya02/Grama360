@@ -231,6 +231,30 @@
     }
   },
   "discoveryNoReviews": "No customer reviews yet",
+  "reviewHeading": "Customer reviews",
+  "reviewWriteButton": "Write a review",
+  "reviewEditButton": "Edit your review",
+  "reviewYourReview": "Your review",
+  "reviewRatingLabel": "Your rating",
+  "reviewRatingValue": "{rating} out of 5 stars",
+  "@reviewRatingValue": {
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewTextLabel": "Review (optional)",
+  "reviewTextHint": "Share a helpful note (up to 1,500 characters).",
+  "reviewSubmitButton": "Submit review",
+  "reviewSaveChanges": "Save changes",
+  "reviewSaving": "Saving review…",
+  "reviewSaved": "Your review was submitted.",
+  "reviewUpdated": "Your review was updated.",
+  "reviewSaveError": "Couldn't save your review. Check your connection and try again.",
+  "reviewLoadError": "Couldn't load reviews. Check your connection and try again.",
+  "reviewEmpty": "No customer reviews yet.",
+  "reviewNotEditable": "This review isn't available for editing right now.",
   "discoveryProviderProfileError": "Couldn't load this provider. Check your connection and try again.",
   "discoveryProviderModeTooltip": "My provider profile",
   "loadMore": "Load more"

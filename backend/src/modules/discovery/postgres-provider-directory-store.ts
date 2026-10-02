@@ -1,9 +1,11 @@
 import type { Pool, QueryResultRow } from 'pg';
 
 import { getDatabasePool } from '../../db/pool.js';
+import { encodePageCursor, type PageCursorPosition } from '../../utils/page-cursor.js';
 import type {
   DiscoveryLanguage,
   ProviderDirectoryStore,
+  ProviderFavoritesPage,
   ProviderSearchOptions,
   ProviderSearchPage,
   PublicProviderProfile,
@@ -29,6 +31,7 @@ interface ProviderDirectoryRow extends QueryResultRow {
   reviewCount: string | number;
   description?: string | null;
   workingHours?: unknown;
+  favoriteCreatedAt?: string;
 }
 
 const providerProjection = `
@@ -239,16 +242,26 @@ export class PostgresProviderDirectoryStore implements ProviderDirectoryStore {
     customerUserId: string,
     language: DiscoveryLanguage,
     limit: number,
-    offset: number,
-  ): Promise<ProviderSearchPage> {
+    cursor: PageCursorPosition | null,
+  ): Promise<ProviderFavoritesPage> {
     const result = await this.getPool().query<ProviderDirectoryRow>(
       `
-        SELECT ${providerProjection}
+        SELECT ${providerProjection},
+               TO_CHAR(
+                 customer_favorites.created_at AT TIME ZONE 'UTC',
+                 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+               ) AS "favoriteCreatedAt"
         ${providerJoins}
         JOIN favorites AS customer_favorites
           ON customer_favorites.provider_id = provider_profiles.id
          AND customer_favorites.customer_user_id = $2::UUID
         WHERE provider_profiles.profile_status = 'ACTIVE'
+          AND EXISTS (
+            SELECT 1
+            FROM user_roles AS provider_role
+            WHERE provider_role.user_id = provider_profiles.user_id
+              AND provider_role.role = 'PROVIDER'
+          )
           AND EXISTS (
             SELECT 1
             FROM provider_services AS active_service
@@ -266,16 +279,32 @@ export class PostgresProviderDirectoryStore implements ProviderDirectoryStore {
             WHERE customer_user.id = $2::UUID
               AND customer_user.account_status = 'ACTIVE'
           )
+          AND (
+            $3::TIMESTAMPTZ IS NULL
+            OR customer_favorites.created_at < $3::TIMESTAMPTZ
+            OR (
+              customer_favorites.created_at = $3::TIMESTAMPTZ
+              AND provider_profiles.id > $4::UUID
+            )
+          )
         ORDER BY customer_favorites.created_at DESC, provider_profiles.id ASC
-        LIMIT $3 OFFSET $4
+        LIMIT $5
       `,
-      [language, customerUserId, limit + 1, offset],
+      [language, customerUserId, cursor?.createdAt ?? null, cursor?.id ?? null, limit + 1],
     );
 
     const hasMore = result.rows.length > limit;
+    const visibleRows = result.rows.slice(0, limit);
+    const lastRow = visibleRows.at(-1);
     return {
-      items: result.rows.slice(0, limit).map(toSummary),
+      items: visibleRows.map(toSummary),
       hasMore,
+      nextCursor: hasMore && lastRow?.favoriteCreatedAt
+        ? encodePageCursor('favorite', {
+            createdAt: lastRow.favoriteCreatedAt,
+            id: lastRow.id,
+          })
+        : null,
     };
   }
 

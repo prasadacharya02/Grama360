@@ -1,3 +1,4 @@
+import type { PageCursorPosition } from '../../utils/page-cursor.js';
 import type { ProviderProfileView } from '../providers/provider.types.js';
 
 export type DiscoveryLanguage = 'en' | 'kn';
@@ -49,6 +50,10 @@ export interface ProviderSearchPage {
   hasMore: boolean;
 }
 
+export interface ProviderFavoritesPage extends ProviderSearchPage {
+  nextCursor: string | null;
+}
+
 export interface ProviderDirectoryStore {
   searchProviders(options: ProviderSearchOptions): Promise<ProviderSearchPage>;
   getPublicProfile(
@@ -60,8 +65,8 @@ export interface ProviderDirectoryStore {
     customerUserId: string,
     language: DiscoveryLanguage,
     limit: number,
-    offset: number,
-  ): Promise<ProviderSearchPage>;
+    cursor: PageCursorPosition | null,
+  ): Promise<ProviderFavoritesPage>;
   addFavorite(customerUserId: string, providerId: string): Promise<boolean>;
   removeFavorite(customerUserId: string, providerId: string): Promise<void>;
 }

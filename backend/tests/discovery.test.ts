@@ -78,7 +78,7 @@ function createTestContext(roles: AppSession['roles'] = ['CUSTOMER']) {
     })),
     getPublicProfile: vi.fn(async () => profile),
     recordCallIntent: vi.fn(async () => '+919123456789'),
-    listFavorites: vi.fn(async () => ({ items: [provider], hasMore: false })),
+    listFavorites: vi.fn(async () => ({ items: [provider], hasMore: false, nextCursor: null })),
     addFavorite: vi.fn(async () => true),
     removeFavorite: vi.fn(async () => undefined),
   };
@@ -185,17 +185,31 @@ describe('customer provider discovery API', () => {
     expect(invalidQuery.status).toBe(400);
     expect(invalidQuery.body.error.code).toBe('INVALID_FAVORITES_QUERY');
 
+    const invalidCursor = await request(context.app)
+      .get('/api/v1/me/favorites?cursor=bad')
+      .set(headers);
+    expect(invalidCursor.status).toBe(400);
+    expect(invalidCursor.body.error.code).toBe('INVALID_FAVORITES_QUERY');
+
+    const legacyOffset = await request(context.app)
+      .get('/api/v1/me/favorites?offset=20')
+      .set(headers);
+    expect(legacyOffset.status).toBe(400);
+    expect(legacyOffset.body.error.code).toBe('INVALID_FAVORITES_QUERY');
+    expect(context.providerDirectoryStore.listFavorites).not.toHaveBeenCalled();
+
     const listed = await request(context.app)
-      .get('/api/v1/me/favorites?language=kn&limit=10&offset=0')
+      .get('/api/v1/me/favorites?language=kn&limit=10')
       .set(headers);
     expect(listed.status).toBe(200);
     expect(listed.body.items[0].id).toBe(providerId);
     expect(listed.body.items[0]).not.toHaveProperty('phoneNumber');
+    expect(listed.body.nextCursor).toBeNull();
     expect(context.providerDirectoryStore.listFavorites).toHaveBeenCalledWith(
       customerSession.user.id,
       'kn',
       10,
-      0,
+      null,
     );
 
     const invalidId = await request(context.app)

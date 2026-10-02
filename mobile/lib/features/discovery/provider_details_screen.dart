@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'discovery_models.dart';
 import 'discovery_providers.dart';
+import 'provider_reviews_section.dart';
 
 class ProviderDetailsScreen extends ConsumerStatefulWidget {
   const ProviderDetailsScreen({
@@ -71,7 +72,10 @@ class _ProviderDetailsScreenState extends ConsumerState<ProviderDetailsScreen> {
               )),
             ),
           ),
-          data: (value) => _ProviderProfileBody(profile: value),
+          data: (value) => _ProviderProfileBody(
+            profile: value,
+            languageCode: widget.languageCode,
+          ),
         ),
       ),
       bottomNavigationBar: loadedProfile == null
@@ -94,9 +98,13 @@ class _ProviderDetailsScreenState extends ConsumerState<ProviderDetailsScreen> {
 }
 
 class _ProviderProfileBody extends StatelessWidget {
-  const _ProviderProfileBody({required this.profile});
+  const _ProviderProfileBody({
+    required this.profile,
+    required this.languageCode,
+  });
 
   final PublicProviderProfile profile;
+  final String languageCode;
 
   @override
   Widget build(BuildContext context) {
@@ -240,6 +248,11 @@ class _ProviderProfileBody extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+        const SizedBox(height: 12),
+        ProviderReviewsSection(
+          providerId: profile.id,
+          languageCode: languageCode,
         ),
       ],
     );

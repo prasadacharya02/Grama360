@@ -111,15 +111,32 @@ paths:
             maximum: 50
             default: 20
         - in: query
-          name: offset
+          name: cursor
+          description: Opaque nextCursor returned by the previous page; do not construct or edit it.
           schema:
-            type: integer
-            minimum: 0
-            maximum: 100000
-            default: 0
+            type: string
+            maxLength: 256
       responses:
         '200':
-          description: Paginated public-safe favorites page.
+          description: Paginated public-safe favorites page with an opaque nextCursor when more results remain.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, hasMore, nextCursor, limit]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      description: Public provider summary; no contact number.
+                  hasMore:
+                    type: boolean
+                  nextCursor:
+                    type: [string, 'null']
+                    maxLength: 256
+                  limit:
+                    type: integer
         '400':
           description: Favorite page filters are invalid.
         '401':
@@ -437,6 +454,135 @@ paths:
           description: Customer role required or account disabled.
         '404':
           description: Provider is not active or available for contact.
+  /providers/{providerId}/reviews:
+    get:
+      summary: List visible reviews for an active provider.
+      description: Requires an active customer account. Returns only visible reviews, a safe first-name display label, no phone numbers, the caller's own review for editing, and a cursor for the next page.
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: cursor
+          description: Opaque nextCursor returned by this endpoint; do not construct or edit it.
+          schema:
+            type: string
+            maxLength: 256
+      responses:
+        '200':
+          description: Visible reviews and the authenticated customer's own review state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, hasMore, nextCursor, myReview, limit]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PublicProviderReview'
+                  hasMore:
+                    type: boolean
+                  nextCursor:
+                    type: [string, 'null']
+                    maxLength: 256
+                  myReview:
+                    oneOf:
+                      - $ref: '#/components/schemas/CustomerProviderReview'
+                      - type: 'null'
+                  limit:
+                    type: integer
+        '400':
+          description: Provider ID, cursor, or page size is invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
+        '404':
+          description: Provider profile, account, or active service category is unavailable.
+    post:
+      summary: Create one customer review for an active provider.
+      description: The customer ID comes only from the authenticated Firebase session. A customer may review a provider once; use PATCH to edit an existing visible review. New reviews are immediately visible in this MVP.
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerReviewInput'
+      responses:
+        '201':
+          description: Visible review created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [review]
+                properties:
+                  review:
+                    $ref: '#/components/schemas/CustomerProviderReview'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
+        '404':
+          description: Provider profile, account, or active service category is unavailable.
+        '409':
+          description: The customer has already reviewed this provider.
+  /reviews/{reviewId}:
+    patch:
+      summary: Edit the authenticated customer's own visible review.
+      description: The review owner is derived from the Firebase session; a review cannot be edited by a different customer or when either account is no longer eligible.
+      parameters:
+        - in: path
+          name: reviewId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerReviewInput'
+      responses:
+        '200':
+          description: Updated customer-owned review.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [review]
+                properties:
+                  review:
+                    $ref: '#/components/schemas/CustomerProviderReview'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
+        '404':
+          description: Review is not visible, is not owned by the caller, or its provider is unavailable.
 components:
   securitySchemes:
     FirebaseBearer:
@@ -445,6 +591,66 @@ components:
       bearerFormat: JWT
       description: Firebase ID token; verified by the API with Firebase Admin.
   schemas:
+    CustomerReviewInput:
+      type: object
+      additionalProperties: false
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reviewText:
+          type: [string, 'null']
+          maxLength: 1500
+          description: Optional text; blank or whitespace-only text is stored as null.
+    PublicProviderReview:
+      type: object
+      additionalProperties: false
+      required: [id, rating, reviewText, reviewerDisplayName, createdAt, isMine]
+      properties:
+        id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reviewText:
+          type: [string, 'null']
+          maxLength: 1500
+        reviewerDisplayName:
+          type: string
+          description: Safe first-name display label; never a phone number.
+        createdAt:
+          type: string
+          format: date-time
+        isMine:
+          type: boolean
+    CustomerProviderReview:
+      type: object
+      additionalProperties: false
+      required: [id, rating, reviewText, moderationStatus, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        reviewText:
+          type: [string, 'null']
+          maxLength: 1500
+        moderationStatus:
+          type: string
+          enum: [VISIBLE, HIDDEN, PENDING]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
     ProviderAvailabilityUpdate:
       type: object
       additionalProperties: false

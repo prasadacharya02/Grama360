@@ -20,7 +20,7 @@ legacy-web/   Archived React/Vite prototype; reference only, not active product
 - **Phase 3 — Provider self-registration and review:** localized service selection and profile form, optional owner-scoped Firebase Storage photo, locality/contact/experience/radius/languages/working hours, transactional PostgreSQL persistence, pending-review status, rejection notes visible to providers, and a native MFA-protected review screen backed by the admin API.
 - **Phase 4 — Customer discovery:** English/Kannada search by service and manually entered locality, approved-provider cards and safe public profiles, availability/rating summaries, and a customer-authenticated call-intent flow that opens the native phone dialer without exposing numbers in search results.
 - **Phase 5 — Provider availability:** providers with active accounts and approved profiles can set `AVAILABLE`, `BUSY`, or `OFFLINE`; customers can filter for providers available now.
-- **Phase 6 — Customer favorites (first increment):** customers can save/remove providers from discovery and review their saved list. Reviews, reports, and moderation remain later increments.
+- **Phase 6 — Customer actions:** customers can save/remove providers, browse public-safe reviews, and submit or edit one 1–5 review per active provider. Reports and broader review moderation remain later increments.
 - Firebase project values, an enabled Storage bucket with the included rules deployed, and a deployed HTTPS API URL must be configured before OTP and provider-photo flows can run. No demo or hardcoded OTP is included.
 
 ## Requirements

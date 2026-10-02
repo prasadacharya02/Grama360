@@ -5,6 +5,7 @@ import {
   createRequireFirebaseAuth,
   type FirebaseIdTokenVerifier,
 } from '../../middleware/require-firebase-auth.js';
+import { decodePageCursor, InvalidPageCursorError, type PageCursorPosition } from '../../utils/page-cursor.js';
 import type { AppSession, AuthUserStore, FirebaseIdentity } from '../auth/types.js';
 import { AccountNotActiveError } from '../auth/types.js';
 import type {
@@ -24,7 +25,7 @@ const searchQuerySchema = z.object({
 const favoritesQuerySchema = z.object({
   language: z.enum(['en', 'kn']).default('en'),
   limit: z.coerce.number().int().min(1).max(50).default(20),
-  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+  cursor: z.string().max(256).optional(),
 }).strict();
 const providerIdSchema = z.string().uuid();
 
@@ -52,17 +53,28 @@ export function createProviderDirectoryRouter(
       return;
     }
 
+    let cursor: PageCursorPosition | null = null;
+    try {
+      if (parsed.data.cursor) cursor = decodePageCursor(parsed.data.cursor, 'favorite');
+    } catch (error) {
+      if (!(error instanceof InvalidPageCursorError)) throw error;
+      response.status(400).json({
+        error: { code: 'INVALID_FAVORITES_QUERY', message: 'Check the favorites page filters.' },
+      });
+      return;
+    }
+
     const page = await dependencies.store.listFavorites(
       session.user.id,
       parsed.data.language,
       parsed.data.limit,
-      parsed.data.offset,
+      cursor,
     );
     response.status(200).json({
       items: page.items,
       hasMore: page.hasMore,
+      nextCursor: page.nextCursor,
       limit: parsed.data.limit,
-      offset: parsed.data.offset,
     });
   });
 

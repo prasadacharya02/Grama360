@@ -25,7 +25,7 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _failed = false;
-  int _nextOffset = 0;
+  String? _nextCursor;
 
   @override
   void initState() {
@@ -55,12 +55,12 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
           .loadFavorites(
             languageCode: _languageCode(),
             limit: _pageSize,
-            offset: append ? _nextOffset : 0,
+            cursor: append ? _nextCursor : null,
           );
       if (!mounted) return;
       setState(() {
         _items = append ? [..._items, ...page.items] : page.items;
-        _nextOffset = append ? _nextOffset + page.items.length : page.items.length;
+        _nextCursor = page.nextCursor;
         _hasMore = page.hasMore;
       });
     } catch (_) {

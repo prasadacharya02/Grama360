@@ -108,6 +108,7 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
   afterAll(async () => {
     try {
       if (providerProfileId) {
+        await pool.query('DELETE FROM reviews WHERE provider_id = $1::UUID', [providerProfileId]);
         await pool.query('DELETE FROM admin_audit_logs WHERE target_id = $1::UUID', [providerProfileId]);
         await pool.query('DELETE FROM verification_records WHERE provider_id = $1::UUID', [providerProfileId]);
         await pool.query('DELETE FROM provider_profiles WHERE id = $1::UUID', [providerProfileId]);
@@ -218,6 +219,38 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
     expect(finalOwnerProfile.status).toBe(200);
     expect(finalOwnerProfile.body.profileStatus).toBe('ACTIVE');
     expect(finalOwnerProfile.body.reviewNote).toBeNull();
+
+    const createdReview = await request(app)
+      .post(`/api/v1/providers/${providerProfileId}/reviews`)
+      .set(customerHeaders)
+      .send({ rating: 5, reviewText: 'Clear and helpful service.' });
+    expect(createdReview.status).toBe(201);
+    expect(createdReview.body.review.moderationStatus).toBe('VISIBLE');
+
+    const duplicateReview = await request(app)
+      .post(`/api/v1/providers/${providerProfileId}/reviews`)
+      .set(customerHeaders)
+      .send({ rating: 4 });
+    expect(duplicateReview.status).toBe(409);
+    expect(duplicateReview.body.error.code).toBe('REVIEW_ALREADY_EXISTS');
+
+    const customerReviews = await request(app)
+      .get(`/api/v1/providers/${providerProfileId}/reviews?limit=10`)
+      .set(customerHeaders);
+    expect(customerReviews.status).toBe(200);
+    expect(customerReviews.body.items).toHaveLength(1);
+    expect(customerReviews.body.items[0].reviewerDisplayName).toBe('Customer');
+    expect(customerReviews.body.items[0]).not.toHaveProperty('phoneNumber');
+    expect(customerReviews.body.items[0].isMine).toBe(true);
+    expect(customerReviews.body.myReview.id).toBe(createdReview.body.review.id);
+
+    const updatedReview = await request(app)
+      .patch(`/api/v1/reviews/${createdReview.body.review.id}`)
+      .set(customerHeaders)
+      .send({ rating: 4, reviewText: 'Updated after the work was done.' });
+    expect(updatedReview.status).toBe(200);
+    expect(updatedReview.body.review.rating).toBe(4);
+    expect(updatedReview.body.review.reviewText).toBe('Updated after the work was done.');
 
     const emptyFavorites = await request(app)
       .get('/api/v1/me/favorites?language=en')
