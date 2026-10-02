@@ -11,6 +11,7 @@ import type {
 } from '../src/modules/providers/provider.types.js';
 import {
   ProviderAlreadyExistsError,
+  ProviderAvailabilityNotEditableError,
   ProviderProfileLockedError,
 } from '../src/modules/providers/provider.types.js';
 
@@ -141,6 +142,11 @@ function createTestContext(options: TestOptions = {}) {
       ...sampleProfile,
       displayName: input.displayName,
       profileStatus: 'PENDING_REVIEW' as const,
+    })),
+    setAvailability: vi.fn(async (_uid, availability) => ({
+      ...sampleProfile,
+      profileStatus: 'ACTIVE' as const,
+      availability,
     })),
   };
   const categoryStore: CategoryStore = {
@@ -299,6 +305,65 @@ describe('provider self-registration API', () => {
       .send(validRegistration());
     expect(locked.status).toBe(409);
     expect(locked.body.error.code).toBe('PROFILE_REVIEW_REQUIRED');
+  });
+
+  it('validates availability changes and enforces provider ownership and active-profile eligibility', async () => {
+    const activeProfile = { ...sampleProfile, profileStatus: 'ACTIVE' as const };
+    const context = createTestContext({ profile: activeProfile });
+    const headers = { Authorization: 'Bearer valid-test-token' };
+
+    const unauthenticated = await request(context.app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .send({ availability: 'AVAILABLE' });
+    expect(unauthenticated.status).toBe(401);
+
+    const invalid = await request(context.app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(headers)
+      .send({ availability: 'AWAY' });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error.code).toBe('INVALID_PROVIDER_AVAILABILITY');
+
+    const extraField = await request(context.app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(headers)
+      .send({ availability: 'AVAILABLE', userId: 'another-user' });
+    expect(extraField.status).toBe(400);
+    expect(context.providerStore.setAvailability).not.toHaveBeenCalled();
+
+    for (const availability of ['AVAILABLE', 'BUSY', 'OFFLINE'] as const) {
+      const response = await request(context.app)
+        .patch('/api/v1/provider-profiles/me/availability')
+        .set(headers)
+        .send({ availability });
+      expect(response.status).toBe(200);
+      expect(response.body.availability).toBe(availability);
+    }
+    expect(context.providerStore.setAvailability).toHaveBeenNthCalledWith(
+      1,
+      firebaseUid,
+      'AVAILABLE',
+    );
+
+    const customerContext = createTestContext({ roles: ['CUSTOMER'] });
+    const forbidden = await request(customerContext.app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(headers)
+      .send({ availability: 'BUSY' });
+    expect(forbidden.status).toBe(403);
+    expect(forbidden.body.error.code).toBe('PROVIDER_ROLE_REQUIRED');
+    expect(customerContext.providerStore.setAvailability).not.toHaveBeenCalled();
+
+    const pendingContext = createTestContext();
+    vi.mocked(pendingContext.providerStore.setAvailability).mockRejectedValue(
+      new ProviderAvailabilityNotEditableError(),
+    );
+    const pending = await request(pendingContext.app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(headers)
+      .send({ availability: 'AVAILABLE' });
+    expect(pending.status).toBe(409);
+    expect(pending.body.error.code).toBe('AVAILABILITY_NOT_EDITABLE');
   });
 
   it('returns a rejection note only through the owner profile endpoint', async () => {

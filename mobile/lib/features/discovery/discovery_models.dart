@@ -31,6 +31,7 @@ class ProviderSearchRequest {
     this.categoryId,
     this.query,
     this.location,
+    this.availableNow = false,
     this.limit = 20,
     this.offset = 0,
   });
@@ -39,6 +40,7 @@ class ProviderSearchRequest {
   final String? categoryId;
   final String? query;
   final String? location;
+  final bool availableNow;
   final int limit;
   final int offset;
 
@@ -47,6 +49,7 @@ class ProviderSearchRequest {
         categoryId: categoryId,
         query: query,
         location: location,
+        availableNow: availableNow,
         limit: limit,
         offset: value,
       );
@@ -59,6 +62,7 @@ class ProviderSearchRequest {
         if (query != null && query!.trim().isNotEmpty) 'q': query!.trim(),
         if (location != null && location!.trim().isNotEmpty)
           'location': location!.trim(),
+        if (availableNow) 'availableNow': true,
       };
 
   @override
@@ -68,12 +72,13 @@ class ProviderSearchRequest {
       other.categoryId == categoryId &&
       other.query == query &&
       other.location == location &&
+      other.availableNow == availableNow &&
       other.limit == limit &&
       other.offset == offset;
 
   @override
   int get hashCode =>
-      Object.hash(languageCode, categoryId, query, location, limit, offset);
+      Object.hash(languageCode, categoryId, query, location, availableNow, limit, offset);
 }
 
 class ProviderDiscoveryPage {

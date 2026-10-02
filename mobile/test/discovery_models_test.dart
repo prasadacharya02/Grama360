@@ -25,6 +25,17 @@ void main() {
     expect(request.withOffset(20), isNot(request));
   });
 
+  test('preserves the Available now filter when serializing and paging', () {
+    const request = ProviderSearchRequest(
+      languageCode: 'en',
+      availableNow: true,
+    );
+
+    expect(request.toQueryParameters()['availableNow'], isTrue);
+    expect(request.withOffset(20).availableNow, isTrue);
+    expect(request.withOffset(20), isNot(request));
+  });
+
   test('parses a public provider search result without a contact number', () {
     final page = ProviderDiscoveryPage.fromJson({
       'items': [

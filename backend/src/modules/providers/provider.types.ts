@@ -6,6 +6,7 @@ export type ProviderProfileStatus =
   | 'SUSPENDED';
 export type SpokenLanguage = 'kn' | 'en' | 'tcy';
 export type LocationLanguage = 'kn' | 'en';
+export type ProviderAvailability = 'AVAILABLE' | 'BUSY' | 'OFFLINE';
 
 export interface ProviderWorkingHourInput {
   weekday: number;
@@ -44,7 +45,7 @@ export interface ProviderProfileView {
   profilePhotoPath: string | null;
   profileStatus: ProviderProfileStatus;
   reviewNote: string | null;
-  availability: 'AVAILABLE' | 'BUSY' | 'OFFLINE';
+  availability: ProviderAvailability;
   location: {
     locality: string;
     taluk: string | null;
@@ -66,6 +67,10 @@ export interface ProviderStore {
   createProfile(firebaseUid: string, input: ProviderRegistrationInput): Promise<ProviderProfileView>;
   getMyProfile(firebaseUid: string): Promise<ProviderProfileView | null>;
   updateProfile(firebaseUid: string, input: ProviderRegistrationInput): Promise<ProviderProfileView | null>;
+  setAvailability(
+    firebaseUid: string,
+    availability: ProviderAvailability,
+  ): Promise<ProviderProfileView | null>;
 }
 
 export class ProviderRoleRequiredError extends Error {
@@ -100,5 +105,12 @@ export class ProviderSecondaryPhoneError extends Error {
   constructor() {
     super('Secondary phone number cannot be the verified account number.');
     this.name = 'ProviderSecondaryPhoneError';
+  }
+}
+
+export class ProviderAvailabilityNotEditableError extends Error {
+  constructor() {
+    super('Only approved provider profiles can update availability.');
+    this.name = 'ProviderAvailabilityNotEditableError';
   }
 }

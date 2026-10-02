@@ -4,6 +4,7 @@ import { getDatabasePool } from '../../db/pool.js';
 import { AccountNotActiveError } from '../auth/types.js';
 import type {
   LocationLanguage,
+  ProviderAvailability,
   ProviderProfileView,
   ProviderRegistrationInput,
   ProviderStore,
@@ -11,6 +12,7 @@ import type {
 } from './provider.types.js';
 import {
   ProviderAlreadyExistsError,
+  ProviderAvailabilityNotEditableError,
   ProviderCategoriesInvalidError,
   ProviderProfileLockedError,
   ProviderRoleRequiredError,
@@ -214,6 +216,41 @@ export class PostgresProviderStore implements ProviderStore {
         [current.id],
       );
 
+      return loadProfile(client, firebaseUid);
+    });
+  }
+
+  async setAvailability(
+    firebaseUid: string,
+    availability: ProviderAvailability,
+  ): Promise<ProviderProfileView | null> {
+    return this.withTransaction(async (client) => {
+      const account = await requireProviderAccount(client, firebaseUid, null);
+      const result = await client.query<ProviderStatusRow>(
+        `
+          SELECT provider_profiles.id::TEXT AS id,
+                 provider_profiles.profile_status AS "profileStatus"
+          FROM provider_profiles
+          WHERE provider_profiles.user_id = $1
+          FOR UPDATE
+        `,
+        [account.id],
+      );
+      const profile = result.rows[0];
+      if (!profile) return null;
+      if (profile.profileStatus !== 'ACTIVE') {
+        throw new ProviderAvailabilityNotEditableError();
+      }
+
+      await client.query(
+        `
+          INSERT INTO availability (provider_id, status)
+          VALUES ($1, $2)
+          ON CONFLICT (provider_id) DO UPDATE
+          SET status = EXCLUDED.status, updated_at = NOW()
+        `,
+        [profile.id, availability],
+      );
       return loadProfile(client, firebaseUid);
     });
   }

@@ -24,6 +24,12 @@ export const workingHourSchema = z
     }
   });
 
+export const providerAvailabilitySchema = z
+  .object({
+    availability: z.enum(['AVAILABLE', 'BUSY', 'OFFLINE']),
+  })
+  .strict();
+
 export const providerRegistrationSchema = z
   .object({
     displayName: z.string().trim().min(1).max(120),

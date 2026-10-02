@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,10 +30,39 @@ class ProviderRegistrationScreen extends ConsumerStatefulWidget {
 class _ProviderRegistrationScreenState
     extends ConsumerState<ProviderRegistrationScreen> {
   ProviderProfile? _justSavedProfile;
+  bool _updatingAvailability = false;
 
   void _onSaved(ProviderProfile profile) {
     setState(() => _justSavedProfile = profile);
     ref.invalidate(myProviderProfileProvider(widget.firebaseUid));
+  }
+
+  Future<void> _setAvailability(ProviderProfile profile, String availability) async {
+    if (_updatingAvailability ||
+        profile.profileStatus != 'ACTIVE' ||
+        profile.availability == availability) {
+      return;
+    }
+
+    setState(() => _updatingAvailability = true);
+    try {
+      final updated = await ref
+          .read(providerRepositoryProvider)
+          .setAvailability(availability);
+      if (!mounted) return;
+      setState(() => _justSavedProfile = updated);
+      ref.invalidate(myProviderProfileProvider(widget.firebaseUid));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).providerAvailabilitySaved)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).providerAvailabilityError)),
+      );
+    } finally {
+      if (mounted) setState(() => _updatingAvailability = false);
+    }
   }
 
   @override
@@ -207,6 +238,10 @@ class _ProviderRegistrationScreenState
                       ),
                     ),
                   ),
+                  if (profile.profileStatus == 'ACTIVE') ...[
+                    const SizedBox(height: 12),
+                    _availabilityControl(strings, profile),
+                  ],
                   const SizedBox(height: 20),
                   OutlinedButton.icon(
                     onPressed: () => ref.read(authRepositoryProvider).signOut(),
@@ -221,6 +256,70 @@ class _ProviderRegistrationScreenState
       ),
     );
   }
+
+  Widget _availabilityControl(AppLocalizations strings, ProviderProfile profile) =>
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                strings.providerAvailabilityTitle,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 6),
+              Text(strings.providerAvailabilityHelp),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: Text(strings.providerAvailabilityAvailable),
+                    selected: profile.availability == 'AVAILABLE',
+                    onSelected: _updatingAvailability
+                        ? null
+                        : (selected) {
+                            if (selected) {
+                              unawaited(_setAvailability(profile, 'AVAILABLE'));
+                            }
+                          },
+                  ),
+                  ChoiceChip(
+                    label: Text(strings.providerAvailabilityBusy),
+                    selected: profile.availability == 'BUSY',
+                    onSelected: _updatingAvailability
+                        ? null
+                        : (selected) {
+                            if (selected) {
+                              unawaited(_setAvailability(profile, 'BUSY'));
+                            }
+                          },
+                  ),
+                  ChoiceChip(
+                    label: Text(strings.providerAvailabilityOffline),
+                    selected: profile.availability == 'OFFLINE',
+                    onSelected: _updatingAvailability
+                        ? null
+                        : (selected) {
+                            if (selected) {
+                              unawaited(_setAvailability(profile, 'OFFLINE'));
+                            }
+                          },
+                  ),
+                ],
+              ),
+              if (_updatingAvailability) ...[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(),
+              ],
+            ],
+          ),
+        ),
+      );
 
   AppBar _appBar(AppLocalizations strings) => AppBar(
         title: Text(strings.providerRegistrationTitle),

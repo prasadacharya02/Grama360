@@ -163,6 +163,29 @@ paths:
           description: Provider profile not found.
         '409':
           description: Profile is locked while pending, active, or suspended.
+  /provider-profiles/me/availability:
+    patch:
+      summary: Update the authenticated provider's availability.
+      description: Updates only the caller's profile. The user account must be active, the provider role must be assigned, and the provider profile must have ACTIVE status; pending, rejected, and suspended profiles cannot change availability.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProviderAvailabilityUpdate'
+      responses:
+        '200':
+          description: Updated caller-owned provider profile and availability.
+        '400':
+          description: Availability value or request fields are invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Provider role required or account disabled.
+        '404':
+          description: Provider profile not found.
+        '409':
+          description: Availability can only be changed on an ACTIVE provider profile.
   /admin/me:
     get:
       summary: Read the enabled administrator role after recent MFA.
@@ -261,6 +284,12 @@ paths:
             enum: [en, kn]
             default: en
         - in: query
+          name: availableNow
+          description: If true, return only providers whose current availability is AVAILABLE.
+          schema:
+            type: boolean
+            default: false
+        - in: query
           name: limit
           schema:
             type: integer
@@ -341,6 +370,14 @@ components:
       bearerFormat: JWT
       description: Firebase ID token; verified by the API with Firebase Admin.
   schemas:
+    ProviderAvailabilityUpdate:
+      type: object
+      additionalProperties: false
+      required: [availability]
+      properties:
+        availability:
+          type: string
+          enum: [AVAILABLE, BUSY, OFFLINE]
     ProviderReviewDecisionInput:
       type: object
       additionalProperties: false

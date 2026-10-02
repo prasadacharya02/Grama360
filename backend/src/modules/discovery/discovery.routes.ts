@@ -17,6 +17,7 @@ const searchQuerySchema = z.object({
   categoryId: z.string().uuid().optional(),
   q: z.string().trim().max(100).optional(),
   location: z.string().trim().max(100).optional(),
+  availableNow: z.enum(['true', 'false']).transform((value) => value === 'true').optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   offset: z.coerce.number().int().min(0).max(100_000).default(0),
 }).strict();
@@ -55,6 +56,9 @@ export function createProviderDirectoryRouter(
       ...(parsed.data.categoryId ? { categoryId: parsed.data.categoryId } : {}),
       ...(parsed.data.q ? { query: parsed.data.q } : {}),
       ...(parsed.data.location ? { location: parsed.data.location } : {}),
+      ...(parsed.data.availableNow !== undefined
+        ? { availableNow: parsed.data.availableNow }
+        : {}),
     };
     const page = await dependencies.store.searchProviders(searchOptions);
     response.status(200).json({

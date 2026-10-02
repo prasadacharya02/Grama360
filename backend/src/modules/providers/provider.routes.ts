@@ -3,10 +3,14 @@ import { Router, type Request, type Response } from 'express';
 import { createRequireFirebaseAuth, type FirebaseIdTokenVerifier } from '../../middleware/require-firebase-auth.js';
 import type { AuthUserStore } from '../auth/types.js';
 import { AccountNotActiveError } from '../auth/types.js';
-import { providerRegistrationSchema } from './provider.schema.js';
+import {
+  providerAvailabilitySchema,
+  providerRegistrationSchema,
+} from './provider.schema.js';
 import type { ProviderStore } from './provider.types.js';
 import {
   ProviderAlreadyExistsError,
+  ProviderAvailabilityNotEditableError,
   ProviderCategoriesInvalidError,
   ProviderProfileLockedError,
   ProviderRoleRequiredError,
@@ -75,7 +79,84 @@ export function createProviderRouter(dependencies: ProviderRouterDependencies): 
     await saveProfile(request, response, dependencies, 'update');
   });
 
+  router.patch('/provider-profiles/me/availability', requireAuth, async (request, response) => {
+    await setAvailability(request, response, dependencies);
+  });
+
   return router;
+}
+
+async function setAvailability(
+  request: Request,
+  response: Response,
+  dependencies: ProviderRouterDependencies,
+): Promise<void> {
+  const identity = request.firebaseIdentity;
+  if (!identity) {
+    response.status(401).json({
+      error: { code: 'UNAUTHENTICATED', message: 'Sign in to continue.' },
+    });
+    return;
+  }
+
+  const parsed = providerAvailabilitySchema.safeParse(request.body ?? {});
+  if (!parsed.success) {
+    response.status(400).json({
+      error: {
+        code: 'INVALID_PROVIDER_AVAILABILITY',
+        message: 'Choose AVAILABLE, BUSY, or OFFLINE.',
+      },
+    });
+    return;
+  }
+
+  try {
+    const session = await dependencies.authUserStore.findSession(identity.uid);
+    if (!session) {
+      response.status(404).json({
+        error: { code: 'SESSION_NOT_FOUND', message: 'Complete sign-in before continuing.' },
+      });
+      return;
+    }
+    if (!session.roles.includes('PROVIDER')) {
+      response.status(403).json({
+        error: { code: 'PROVIDER_ROLE_REQUIRED', message: 'Choose the service provider role first.' },
+      });
+      return;
+    }
+
+    const profile = await dependencies.store.setAvailability(identity.uid, parsed.data.availability);
+    if (!profile) {
+      response.status(404).json({
+        error: { code: 'PROVIDER_PROFILE_NOT_FOUND', message: 'Complete provider registration.' },
+      });
+      return;
+    }
+    response.status(200).json(profile);
+  } catch (error) {
+    if (error instanceof ProviderAvailabilityNotEditableError) {
+      response.status(409).json({
+        error: {
+          code: 'AVAILABILITY_NOT_EDITABLE',
+          message: 'Only an active provider profile can update availability.',
+        },
+      });
+      return;
+    }
+    if (error instanceof ProviderRoleRequiredError) {
+      response.status(403).json({
+        error: { code: 'PROVIDER_ROLE_REQUIRED', message: 'Choose the service provider role first.' },
+      });
+      return;
+    }
+    if (error instanceof AccountNotActiveError) {
+      response.status(403).json({
+        error: { code: 'ACCOUNT_DISABLED', message: 'This account is not active.' },
+      });
+      return;
+    }
+    throw error;
+  }
 }
 
 async function saveProfile(

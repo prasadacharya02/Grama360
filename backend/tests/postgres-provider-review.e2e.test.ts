@@ -165,6 +165,13 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
     expect(created.body.profileStatus).toBe('PENDING_REVIEW');
     providerProfileId = created.body.id;
 
+    const pendingAvailability = await request(app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set({ Authorization: 'Bearer smoke-provider-token' })
+      .send({ availability: 'AVAILABLE' });
+    expect(pendingAvailability.status).toBe(409);
+    expect(pendingAvailability.body.error.code).toBe('AVAILABILITY_NOT_EDITABLE');
+
     const hiddenWhilePending = await request(app)
       .get('/api/v1/providers')
       .set(customerHeaders);
@@ -211,6 +218,69 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
     expect(finalOwnerProfile.status).toBe(200);
     expect(finalOwnerProfile.body.profileStatus).toBe('ACTIVE');
     expect(finalOwnerProfile.body.reviewNote).toBeNull();
+
+    const availableFilterBeforeChange = await request(app)
+      .get(`/api/v1/providers?categoryId=${serviceId}&availableNow=true`)
+      .set(customerHeaders);
+    expect(availableFilterBeforeChange.status).toBe(200);
+    expect(availableFilterBeforeChange.body.items).toEqual([]);
+
+    const available = await request(app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(providerHeaders)
+      .send({ availability: 'AVAILABLE' });
+    expect(available.status).toBe(200);
+    expect(available.body.availability).toBe('AVAILABLE');
+
+    const availableSearch = await request(app)
+      .get(`/api/v1/providers?categoryId=${serviceId}&availableNow=true&location=${encodeURIComponent(locality)}`)
+      .set(customerHeaders);
+    expect(availableSearch.status).toBe(200);
+    expect(availableSearch.body.items.map((item: { id: string }) => item.id)).toContain(
+      providerProfileId,
+    );
+
+    const busy = await request(app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(providerHeaders)
+      .send({ availability: 'BUSY' });
+    expect(busy.status).toBe(200);
+    expect(busy.body.availability).toBe('BUSY');
+
+    const busyFilteredSearch = await request(app)
+      .get(`/api/v1/providers?categoryId=${serviceId}&availableNow=true`)
+      .set(customerHeaders);
+    expect(busyFilteredSearch.status).toBe(200);
+    expect(busyFilteredSearch.body.items).toEqual([]);
+
+    const availableAgain = await request(app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(providerHeaders)
+      .send({ availability: 'AVAILABLE' });
+    expect(availableAgain.status).toBe(200);
+    expect(availableAgain.body.availability).toBe('AVAILABLE');
+
+    await pool.query(
+      "UPDATE provider_profiles SET profile_status = 'SUSPENDED' WHERE id = $1::UUID",
+      [providerProfileId],
+    );
+    const suspendedAvailability = await request(app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(providerHeaders)
+      .send({ availability: 'OFFLINE' });
+    expect(suspendedAvailability.status).toBe(409);
+    expect(suspendedAvailability.body.error.code).toBe('AVAILABILITY_NOT_EDITABLE');
+    await pool.query(
+      "UPDATE provider_profiles SET profile_status = 'ACTIVE' WHERE id = $1::UUID",
+      [providerProfileId],
+    );
+
+    const offline = await request(app)
+      .patch('/api/v1/provider-profiles/me/availability')
+      .set(providerHeaders)
+      .send({ availability: 'OFFLINE' });
+    expect(offline.status).toBe(200);
+    expect(offline.body.availability).toBe('OFFLINE');
 
     const search = await request(app)
       .get(

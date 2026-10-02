@@ -29,6 +29,7 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
   final TextEditingController _queryController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   String? _selectedCategoryId;
+  bool _availableNow = false;
   late ProviderSearchRequest _request;
   List<PublicProviderSummary> _items = const [];
   bool _hasMore = false;
@@ -62,6 +63,7 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
       categoryId: _selectedCategoryId,
       query: _queryController.text.trim(),
       location: _locationController.text.trim(),
+      availableNow: _availableNow,
     );
     setState(() {
       _request = request;
@@ -230,7 +232,13 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
                             prefixIcon: const Icon(Icons.location_on_outlined),
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(strings.discoveryAvailableNow),
+                          value: _availableNow,
+                          onChanged: (value) =>
+                              setState(() => _availableNow = value),
+                        ),
                         _buildCategorySelector(strings, languageCode),
                         const SizedBox(height: 10),
                         FilledButton.icon(

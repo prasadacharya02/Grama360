@@ -59,6 +59,14 @@ class ProviderRepository {
     return ProviderProfile.fromJson(response.data);
   }
 
+  Future<ProviderProfile> setAvailability(String availability) async {
+    final response = await _dio.patch<Object?>(
+      'provider-profiles/me/availability',
+      data: {'availability': availability},
+    );
+    return ProviderProfile.fromJson(response.data);
+  }
+
   Future<String> uploadProfilePhoto(String firebaseUid, XFile image) async {
     final Uint8List bytes = await image.readAsBytes();
     if (bytes.isEmpty || bytes.length > 5 * 1024 * 1024) {

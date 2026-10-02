@@ -1,6 +1,6 @@
 # Grama360 REST API plan
 
-Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Authorization: Bearer <Firebase ID token>`; Express verifies the token with Firebase Admin and resolves app roles from PostgreSQL. OTP verification is performed by the Firebase mobile SDK, not by a custom OTP endpoint. Phase 2 implements `POST /auth/session`, `GET /me`, and `PUT /me/roles`. Phase 3 implements localized category listing, provider self-registration, and a minimal MFA-protected provider-review API. Phase 4 implements customer provider search, safe public profiles, and an authenticated call-intent endpoint; other endpoints below are planned for later phases.
+Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Authorization: Bearer <Firebase ID token>`; Express verifies the token with Firebase Admin and resolves app roles from PostgreSQL. OTP verification is performed by the Firebase mobile SDK, not by a custom OTP endpoint. Phase 2 implements `POST /auth/session`, `GET /me`, and `PUT /me/roles`. Phase 3 implements localized category listing, provider self-registration, and a minimal MFA-protected provider-review API. Phase 4 implements customer provider search, safe public profiles, and an authenticated call-intent endpoint. Phase 5 adds provider-owned availability updates and an availability-only discovery filter; later features are marked planned.
 
 ## Authentication and account
 
@@ -17,7 +17,7 @@ Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Autho
 |---|---|---|
 | `GET /categories?language=kn` | Read | Implemented. Returns active categories with English or Kannada names and parent IDs. `language` defaults to `en`; other values receive `400 INVALID_LANGUAGE`. |
 | `GET /locations/search?q=...&district=...` | Read | Planned paginated manual village/town/area lookup. |
-| `GET /providers?categoryId=&q=&location=&language=&limit=&offset=` | Authenticated customer | Implemented. Filters approved providers by active service category, provider/service text, and locality/taluk/district text. Returns up to 50 results per page, localized names, availability, aggregate ratings, and no contact number. |
+| `GET /providers?categoryId=&q=&location=&availableNow=&language=&limit=&offset=` | Authenticated customer | Implemented. Filters approved providers by active service category, provider/service text, locality/taluk/district text, and (when `availableNow=true`) availability `AVAILABLE`. Returns up to 50 results per page, localized names, availability, aggregate ratings, and no contact number. |
 | `GET /providers/:providerId?language=` | Authenticated customer | Implemented. Returns an approved provider's safe public profile, service area, availability, schedule and aggregate ratings; never returns a phone number. |
 | `POST /providers/:providerId/call-intent` | Authenticated customer | Implemented. Records an aggregate daily call tap and returns the verified phone number for the native dialer; this is not evidence of a completed call. |
 | `GET /providers/:providerId/reviews?cursor=&limit=` | Authenticated customer | Planned paginated visible reviews. |
@@ -29,6 +29,7 @@ Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Autho
 | `POST /provider-profiles` | Provider | Implemented. Transactionally create the caller's profile and request review; the server sets `PENDING_REVIEW`. |
 | `GET /provider-profiles/me` | Provider | Implemented. Read only the caller's profile and review status. |
 | `PATCH /provider-profiles/me` | Provider | Implemented for own `DRAFT` or `REJECTED` profiles; resubmission returns to `PENDING_REVIEW`. Pending, active, and suspended profiles are locked. |
+| `PATCH /provider-profiles/me/availability` | Provider | Implemented. Body is `{ "availability": "AVAILABLE" | "BUSY" | "OFFLINE" }`. The server checks the active account, provider role, token-owned profile, and `ACTIVE` profile status; other profile states receive `409 AVAILABILITY_NOT_EDITABLE`. |
 | `PUT /provider-profiles/me/services` | Provider | Replace own selected service categories transactionally. |
 | `PUT /provider-profiles/me/working-hours` | Provider | Replace weekly working hours after validation. |
 | `PATCH /provider-profiles/me/availability` | Provider | Change own state to `AVAILABLE`, `BUSY`, or `OFFLINE`. |

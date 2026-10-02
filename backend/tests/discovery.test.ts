@@ -137,6 +137,37 @@ describe('customer provider discovery API', () => {
     });
   });
 
+  it('validates and passes through the Available now search filter', async () => {
+    const { app, providerDirectoryStore } = createTestContext();
+    const available = await request(app)
+      .get('/api/v1/providers?availableNow=true')
+      .set('Authorization', 'Bearer valid-customer-token');
+    expect(available.status).toBe(200);
+    expect(providerDirectoryStore.searchProviders).toHaveBeenCalledWith({
+      language: 'en',
+      limit: 20,
+      offset: 0,
+      availableNow: true,
+    });
+
+    const allStatuses = await request(app)
+      .get('/api/v1/providers?availableNow=false')
+      .set('Authorization', 'Bearer valid-customer-token');
+    expect(allStatuses.status).toBe(200);
+    expect(providerDirectoryStore.searchProviders).toHaveBeenLastCalledWith({
+      language: 'en',
+      limit: 20,
+      offset: 0,
+      availableNow: false,
+    });
+
+    const invalid = await request(app)
+      .get('/api/v1/providers?availableNow=yes')
+      .set('Authorization', 'Bearer valid-customer-token');
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.error.code).toBe('INVALID_PROVIDER_SEARCH');
+  });
+
   it('returns only an approved public profile and validates provider IDs', async () => {
     const { app, providerDirectoryStore } = createTestContext();
     const invalid = await request(app)

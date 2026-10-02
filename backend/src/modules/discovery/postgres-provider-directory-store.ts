@@ -153,6 +153,9 @@ export class PostgresProviderDirectoryStore implements ProviderDirectoryStore {
             locations.taluk_en ILIKE $4 ESCAPE CHR(92) OR
             locations.taluk_kn ILIKE $4 ESCAPE CHR(92)
           )
+          AND ($5::BOOLEAN IS FALSE OR
+            COALESCE(availability.status, 'OFFLINE') = 'AVAILABLE'
+          )
         ORDER BY CASE COALESCE(availability.status, 'OFFLINE')
                    WHEN 'AVAILABLE' THEN 0
                    WHEN 'BUSY' THEN 1
@@ -161,13 +164,14 @@ export class PostgresProviderDirectoryStore implements ProviderDirectoryStore {
                  review_stats.average_rating DESC NULLS LAST,
                  review_stats.review_count DESC,
                  provider_profiles.display_name ASC
-        LIMIT $5 OFFSET $6
+        LIMIT $6 OFFSET $7
       `,
       [
         options.language,
         options.categoryId ?? null,
         queryPattern,
         locationPattern,
+        options.availableNow ?? false,
         options.limit + 1,
         options.offset,
       ],

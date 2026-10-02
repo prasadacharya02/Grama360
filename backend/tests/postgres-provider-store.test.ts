@@ -2,9 +2,10 @@ import type { Pool, PoolClient } from 'pg';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PostgresProviderStore } from '../src/modules/providers/postgres-provider-store.js';
-import type { ProviderRegistrationInput } from '../src/modules/providers/provider.types.js';
+import type { ProviderRegistrationInput, ProviderProfileStatus } from '../src/modules/providers/provider.types.js';
 import {
   ProviderAlreadyExistsError,
+  ProviderAvailabilityNotEditableError,
   ProviderCategoriesInvalidError,
 } from '../src/modules/providers/provider.types.js';
 
@@ -46,6 +47,10 @@ function registration(): ProviderRegistrationInput {
 interface FakePoolOptions {
   missingSecondCategory?: boolean;
   existingProfile?: boolean;
+  missingProfile?: boolean;
+  profileStatus?: ProviderProfileStatus;
+  accountStatus?: 'ACTIVE' | 'SUSPENDED' | 'DELETED';
+  missingProviderRole?: boolean;
 }
 
 function createFakePool(options: FakePoolOptions = {}) {
@@ -59,7 +64,7 @@ function createFakePool(options: FakePoolOptions = {}) {
     experienceYears: 8,
     description: null,
     profilePhotoPath: null,
-    profileStatus: 'PENDING_REVIEW',
+    profileStatus: options.profileStatus ?? 'PENDING_REVIEW',
     reviewNote: null,
     availability: 'OFFLINE',
     locality: 'ಕುಸುಗಲ್',
@@ -78,10 +83,31 @@ function createFakePool(options: FakePoolOptions = {}) {
     }
     if (normalized.includes('FROM users') && normalized.includes('FOR UPDATE')) {
       return {
-        rows: [{ id: userId, phoneNumber: '+919876543210', accountStatus: 'ACTIVE' }],
+        rows: [{
+          id: userId,
+          phoneNumber: '+919876543210',
+          accountStatus: options.accountStatus ?? 'ACTIVE',
+        }],
       };
     }
-    if (normalized.includes('FROM user_roles')) return { rows: [{ role: 'PROVIDER' }] };
+    if (normalized.includes('FROM user_roles')) {
+      return { rows: options.missingProviderRole ? [] : [{ role: 'PROVIDER' }] };
+    }
+    if (
+      normalized.includes('FROM provider_profiles') &&
+      normalized.includes('FOR UPDATE') &&
+      !normalized.includes('JOIN users')
+    ) {
+      return {
+        rows: options.missingProfile
+          ? []
+          : [{ id: providerId, profileStatus: options.profileStatus ?? 'PENDING_REVIEW' }],
+      };
+    }
+    if (normalized.startsWith('INSERT INTO availability')) {
+      profileRow.availability = values[1] as string;
+      return { rows: [] };
+    }
     if (normalized.includes('FROM service_categories')) {
       const ids = values[0] as string[];
       return {
@@ -179,6 +205,58 @@ describe('PostgresProviderStore transaction behavior', () => {
     expect(fake.statements.at(-1)?.sql).toBe('ROLLBACK');
     expect(fake.statements.some(({ sql }) => sql.startsWith('INSERT INTO locations'))).toBe(false);
     expect(fake.client.release).toHaveBeenCalledOnce();
+  });
+
+  it('allows an active provider to transition availability on their own profile', async () => {
+    const fake = createFakePool({ profileStatus: 'ACTIVE' });
+
+    for (const availability of ['AVAILABLE', 'BUSY', 'OFFLINE'] as const) {
+      const profile = await fake.store.setAvailability(uid, availability);
+      expect(profile?.profileStatus).toBe('ACTIVE');
+      expect(profile?.availability).toBe(availability);
+    }
+
+    const updates = fake.statements.filter(({ sql }) => sql.startsWith('INSERT INTO availability'));
+    expect(updates.map(({ values }) => values)).toEqual([
+      [providerId, 'AVAILABLE'],
+      [providerId, 'BUSY'],
+      [providerId, 'OFFLINE'],
+    ]);
+    const accountLookup = fake.statements.find(({ sql }) => sql.includes('FROM users'));
+    expect(accountLookup?.values).toEqual([uid]);
+    const profileLookup = fake.statements.find(
+      ({ sql }) => sql.includes('FROM provider_profiles') && sql.includes('FOR UPDATE'),
+    );
+    expect(profileLookup?.values).toEqual([userId]);
+    expect(fake.statements.at(-1)?.sql).toBe('COMMIT');
+  });
+
+  it.each(['PENDING_REVIEW', 'SUSPENDED'] as const)(
+    'does not change availability for a %s profile',
+    async (profileStatus) => {
+      const fake = createFakePool({ profileStatus });
+
+      await expect(fake.store.setAvailability(uid, 'AVAILABLE')).rejects.toBeInstanceOf(
+        ProviderAvailabilityNotEditableError,
+      );
+      expect(fake.statements.at(-1)?.sql).toBe('ROLLBACK');
+      expect(fake.statements.some(({ sql }) => sql.startsWith('INSERT INTO availability')))
+        .toBe(false);
+    },
+  );
+
+  it('rechecks the active account and provider role inside the availability transaction', async () => {
+    const disabled = createFakePool({ accountStatus: 'SUSPENDED', profileStatus: 'ACTIVE' });
+    await expect(disabled.store.setAvailability(uid, 'BUSY')).rejects.toMatchObject({
+      name: 'AccountNotActiveError',
+    });
+    expect(disabled.statements.at(-1)?.sql).toBe('ROLLBACK');
+
+    const noProviderRole = createFakePool({ missingProviderRole: true, profileStatus: 'ACTIVE' });
+    await expect(noProviderRole.store.setAvailability(uid, 'BUSY')).rejects.toMatchObject({
+      name: 'ProviderRoleRequiredError',
+    });
+    expect(noProviderRole.statements.at(-1)?.sql).toBe('ROLLBACK');
   });
 
   it('rolls back the location if this user already has a provider profile', async () => {

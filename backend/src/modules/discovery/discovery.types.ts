@@ -7,6 +7,7 @@ export interface ProviderSearchOptions {
   categoryId?: string;
   query?: string;
   location?: string;
+  availableNow?: boolean;
   limit: number;
   offset: number;
 }
