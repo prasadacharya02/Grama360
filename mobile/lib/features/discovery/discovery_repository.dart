@@ -28,6 +28,36 @@ class ProviderDirectoryRepository {
     return ProviderDiscoveryPage.fromJson(response.data);
   }
 
+  Future<ProviderDiscoveryPage> loadFavorites({
+    required String languageCode,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    final response = await _dio.get<Object?>(
+      'me/favorites',
+      queryParameters: {
+        'language': languageCode,
+        'limit': limit,
+        'offset': offset,
+      },
+    );
+    return ProviderDiscoveryPage.fromJson(response.data);
+  }
+
+  Future<bool> setFavorite({
+    required String providerId,
+    required bool favorite,
+  }) async {
+    final response = favorite
+        ? await _dio.put<Object?>('me/favorites/$providerId')
+        : await _dio.delete<Object?>('me/favorites/$providerId');
+    final data = _asMap(response.data, 'favorite update');
+    if (data['favorite'] is! bool) {
+      throw const FormatException('The favorite response is invalid.');
+    }
+    return data['favorite'] as bool;
+  }
+
   Future<PublicProviderProfile> loadProfile({
     required String providerId,
     required String languageCode,

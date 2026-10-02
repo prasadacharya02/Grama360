@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +9,7 @@ import '../auth/app_session.dart';
 import '../auth/auth_providers.dart';
 import '../provider_registration/provider_registration_screen.dart';
 import 'discovery_models.dart';
+import 'favorites_screen.dart';
 import 'discovery_providers.dart';
 import 'provider_details_screen.dart';
 
@@ -37,6 +40,9 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
   bool _loadingMore = false;
   bool _addingProviderRole = false;
   bool _searchFailed = false;
+  bool _favoriteIdsLoaded = false;
+  final Set<String> _favoriteIds = {};
+  final Set<String> _togglingFavorites = {};
 
   @override
   void initState() {
@@ -45,7 +51,9 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
       languageCode: _supportedLanguage(widget.session.preferredLanguage),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _runSearch();
+      if (!mounted) return;
+      _runSearch();
+      unawaited(_loadFavoriteIds());
     });
   }
 
@@ -110,6 +118,70 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
     }
   }
 
+  Future<void> _loadFavoriteIds() async {
+    try {
+      final page = await ref.read(providerDirectoryRepositoryProvider).loadFavorites(
+            languageCode: _currentLanguageCode(),
+            limit: 50,
+          );
+      if (!mounted) return;
+      setState(() {
+        _favoriteIds
+          ..clear()
+          ..addAll(page.items.map((provider) => provider.id));
+        _favoriteIdsLoaded = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _favoriteIdsLoaded = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(AppLocalizations.of(context).favoritesLoadError)),
+      );
+    }
+  }
+
+  Future<void> _toggleFavorite(PublicProviderSummary provider) async {
+    if (!_favoriteIdsLoaded || _togglingFavorites.contains(provider.id)) return;
+    final strings = AppLocalizations.of(context);
+    final shouldSave = !_favoriteIds.contains(provider.id);
+    setState(() => _togglingFavorites.add(provider.id));
+    try {
+      final saved = await ref.read(providerDirectoryRepositoryProvider).setFavorite(
+            providerId: provider.id,
+            favorite: shouldSave,
+          );
+      if (!mounted) return;
+      setState(() {
+        if (saved) {
+          _favoriteIds.add(provider.id);
+        } else {
+          _favoriteIds.remove(provider.id);
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(saved ? strings.favoritesSaved : strings.favoritesRemoved),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(strings.favoritesUpdateError)),
+      );
+    } finally {
+      if (mounted) setState(() => _togglingFavorites.remove(provider.id));
+    }
+  }
+
+  Future<void> _openFavorites() async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => const FavoritesScreen()),
+    );
+    if (!mounted) return;
+    setState(() => _favoriteIdsLoaded = false);
+    await _loadFavoriteIds();
+  }
+
   String _currentLanguageCode() =>
       _supportedLanguage(Localizations.localeOf(context).languageCode);
 
@@ -169,6 +241,11 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
               onPressed: _openProviderTools,
               icon: const Icon(Icons.handyman_outlined),
             ),
+          IconButton(
+            tooltip: strings.favoritesTitle,
+            onPressed: _openFavorites,
+            icon: const Icon(Icons.favorite_border_rounded),
+          ),
           const LanguageAction(),
           IconButton(
             tooltip: strings.signOut,
@@ -370,6 +447,10 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
           _ProviderResultCard(
             provider: provider,
             onTap: () => _openProfile(provider),
+            onFavoriteTap: () => unawaited(_toggleFavorite(provider)),
+            isFavorite: _favoriteIds.contains(provider.id),
+            favoriteEnabled: _favoriteIdsLoaded,
+            favoriteBusy: _togglingFavorites.contains(provider.id),
           ),
         if (_searchFailed)
           Padding(
@@ -400,10 +481,21 @@ class _ProviderDirectoryScreenState extends ConsumerState<ProviderDirectoryScree
 }
 
 class _ProviderResultCard extends StatelessWidget {
-  const _ProviderResultCard({required this.provider, required this.onTap});
+  const _ProviderResultCard({
+    required this.provider,
+    required this.onTap,
+    required this.onFavoriteTap,
+    required this.isFavorite,
+    required this.favoriteEnabled,
+    required this.favoriteBusy,
+  });
 
   final PublicProviderSummary provider;
   final VoidCallback onTap;
+  final VoidCallback onFavoriteTap;
+  final bool isFavorite;
+  final bool favoriteEnabled;
+  final bool favoriteBusy;
 
   @override
   Widget build(BuildContext context) {
@@ -481,6 +573,20 @@ class _ProviderResultCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                tooltip: isFavorite ? strings.favoritesRemove : strings.favoritesSave,
+                onPressed: !favoriteEnabled || favoriteBusy ? null : onFavoriteTap,
+                icon: favoriteBusy
+                    ? const SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        isFavorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                      ),
               ),
               const Icon(Icons.chevron_right_rounded),
             ],

@@ -1,6 +1,6 @@
 # Grama360 REST API plan
 
-Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Authorization: Bearer <Firebase ID token>`; Express verifies the token with Firebase Admin and resolves app roles from PostgreSQL. OTP verification is performed by the Firebase mobile SDK, not by a custom OTP endpoint. Phase 2 implements `POST /auth/session`, `GET /me`, and `PUT /me/roles`. Phase 3 implements localized category listing, provider self-registration, and a minimal MFA-protected provider-review API. Phase 4 implements customer provider search, safe public profiles, and an authenticated call-intent endpoint. Phase 5 adds provider-owned availability updates and an availability-only discovery filter; later features are marked planned.
+Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Authorization: Bearer <Firebase ID token>`; Express verifies the token with Firebase Admin and resolves app roles from PostgreSQL. OTP verification is performed by the Firebase mobile SDK, not by a custom OTP endpoint. Phase 2 implements `POST /auth/session`, `GET /me`, and `PUT /me/roles`. Phase 3 implements localized category listing, provider self-registration, and a minimal MFA-protected provider-review API. Phase 4 implements customer provider search, safe public profiles, and an authenticated call-intent endpoint. Phase 5 adds provider-owned availability updates and an availability-only discovery filter. The first Phase 6 increment adds customer favorites; reviews, reports, and broader moderation remain planned.
 
 ## Authentication and account
 
@@ -32,7 +32,6 @@ Base path: `/api/v1`. All business APIs use HTTPS. Protected requests use `Autho
 | `PATCH /provider-profiles/me/availability` | Provider | Implemented. Body is `{ "availability": "AVAILABLE" | "BUSY" | "OFFLINE" }`. The server checks the active account, provider role, token-owned profile, and `ACTIVE` profile status; other profile states receive `409 AVAILABILITY_NOT_EDITABLE`. |
 | `PUT /provider-profiles/me/services` | Provider | Replace own selected service categories transactionally. |
 | `PUT /provider-profiles/me/working-hours` | Provider | Replace weekly working hours after validation. |
-| `PATCH /provider-profiles/me/availability` | Provider | Change own state to `AVAILABLE`, `BUSY`, or `OFFLINE`. |
 
 Provider registration requires one to five unique active service IDs, one to three spoken languages (`kn`, `en`, `tcy`), a complete seven-day schedule (weekday 0 is Sunday and 6 is Saturday) with at least one open day, a 1–200 km service radius, 0–80 years of experience, and locality/district labels entered in English or Kannada. The verified Firebase phone is the primary contact; an optional secondary phone must be a different E.164 number. The API derives the owner from the token, checks the provider role in PostgreSQL again inside the transaction, and never accepts a user ID or review status from the body. Manually entered locality/taluk/district names are stored in the language supplied; no exact household coordinates are collected.
 
@@ -42,9 +41,9 @@ Profile-photo upload is handled with Firebase Storage under owner-only write rul
 
 | Method / path | Access | Purpose |
 |---|---|---|
-| `GET /me/favorites?cursor=&limit=` | Customer | List saved providers. |
-| `PUT /me/favorites/:providerId` | Customer | Idempotently save a provider. |
-| `DELETE /me/favorites/:providerId` | Customer | Remove a saved provider. |
+| `GET /me/favorites?language=&limit=&offset=` | Authenticated customer | Implemented. Returns a paginated list of the caller's saved, currently active provider summaries without contact numbers. |
+| `PUT /me/favorites/:providerId` | Authenticated customer | Implemented and idempotent. Saves an active, publicly discoverable provider for the caller; returns `404 PROVIDER_NOT_FOUND` if the provider is not eligible. |
+| `DELETE /me/favorites/:providerId` | Authenticated customer | Implemented and idempotent. Removes only the caller's saved provider and returns `{ "favorite": false }`. |
 | `POST /providers/:providerId/reviews` | Customer | Create one 1–5 review for a provider. Server derives reviewer identity from token. |
 | `PATCH /reviews/:reviewId` | Review owner | Edit own review subject to policy. |
 | `POST /providers/:providerId/reports` | Customer | Report a provider with an allowlisted reason and optional details. |

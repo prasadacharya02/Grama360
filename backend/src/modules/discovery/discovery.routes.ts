@@ -5,7 +5,7 @@ import {
   createRequireFirebaseAuth,
   type FirebaseIdTokenVerifier,
 } from '../../middleware/require-firebase-auth.js';
-import type { AuthUserStore, FirebaseIdentity } from '../auth/types.js';
+import type { AppSession, AuthUserStore, FirebaseIdentity } from '../auth/types.js';
 import { AccountNotActiveError } from '../auth/types.js';
 import type {
   ProviderDirectoryStore,
@@ -18,6 +18,11 @@ const searchQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   location: z.string().trim().max(100).optional(),
   availableNow: z.enum(['true', 'false']).transform((value) => value === 'true').optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+}).strict();
+const favoritesQuerySchema = z.object({
+  language: z.enum(['en', 'kn']).default('en'),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   offset: z.coerce.number().int().min(0).max(100_000).default(0),
 }).strict();
@@ -34,6 +39,70 @@ export function createProviderDirectoryRouter(
 ): Router {
   const router = Router();
   const requireAuth = createRequireFirebaseAuth(dependencies.verifyToken);
+
+  router.get('/me/favorites', requireAuth, async (request, response) => {
+    const session = await requireCustomer(request.firebaseIdentity, dependencies, response);
+    if (!session) return;
+
+    const parsed = favoritesQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      response.status(400).json({
+        error: { code: 'INVALID_FAVORITES_QUERY', message: 'Check the favorites page filters.' },
+      });
+      return;
+    }
+
+    const page = await dependencies.store.listFavorites(
+      session.user.id,
+      parsed.data.language,
+      parsed.data.limit,
+      parsed.data.offset,
+    );
+    response.status(200).json({
+      items: page.items,
+      hasMore: page.hasMore,
+      limit: parsed.data.limit,
+      offset: parsed.data.offset,
+    });
+  });
+
+  router.put('/me/favorites/:providerId', requireAuth, async (request, response) => {
+    const session = await requireCustomer(request.firebaseIdentity, dependencies, response);
+    if (!session) return;
+
+    const parsedId = providerIdSchema.safeParse(request.params.providerId);
+    if (!parsedId.success) {
+      response.status(400).json({
+        error: { code: 'INVALID_PROVIDER_ID', message: 'The provider identifier is invalid.' },
+      });
+      return;
+    }
+
+    const eligible = await dependencies.store.addFavorite(session.user.id, parsedId.data);
+    if (!eligible) {
+      response.status(404).json({
+        error: { code: 'PROVIDER_NOT_FOUND', message: 'This provider is not available.' },
+      });
+      return;
+    }
+    response.status(200).json({ favorite: true });
+  });
+
+  router.delete('/me/favorites/:providerId', requireAuth, async (request, response) => {
+    const session = await requireCustomer(request.firebaseIdentity, dependencies, response);
+    if (!session) return;
+
+    const parsedId = providerIdSchema.safeParse(request.params.providerId);
+    if (!parsedId.success) {
+      response.status(400).json({
+        error: { code: 'INVALID_PROVIDER_ID', message: 'The provider identifier is invalid.' },
+      });
+      return;
+    }
+
+    await dependencies.store.removeFavorite(session.user.id, parsedId.data);
+    response.status(200).json({ favorite: false });
+  });
 
   router.get('/providers', requireAuth, async (request, response) => {
     if (!(await requireCustomer(request.firebaseIdentity, dependencies, response))) return;
@@ -128,12 +197,12 @@ async function requireCustomer(
   identity: FirebaseIdentity | undefined,
   dependencies: ProviderDirectoryRouterDependencies,
   response: Response,
-): Promise<boolean> {
+): Promise<AppSession | null> {
   if (!identity) {
     response.status(401).json({
       error: { code: 'UNAUTHENTICATED', message: 'Sign in to continue.' },
     });
-    return false;
+    return null;
   }
 
   try {
@@ -142,7 +211,7 @@ async function requireCustomer(
       response.status(404).json({
         error: { code: 'SESSION_NOT_FOUND', message: 'Complete sign-in before continuing.' },
       });
-      return false;
+      return null;
     }
     if (!session.roles.includes('CUSTOMER')) {
       response.status(403).json({
@@ -151,15 +220,15 @@ async function requireCustomer(
           message: 'Choose the customer role to find local service providers.',
         },
       });
-      return false;
+      return null;
     }
-    return true;
+    return session;
   } catch (error) {
     if (error instanceof AccountNotActiveError) {
       response.status(403).json({
         error: { code: 'ACCOUNT_DISABLED', message: 'This account is not active.' },
       });
-      return false;
+      return null;
     }
     throw error;
   }

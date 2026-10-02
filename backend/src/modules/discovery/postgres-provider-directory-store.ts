@@ -235,6 +235,115 @@ export class PostgresProviderDirectoryStore implements ProviderDirectoryStore {
     };
   }
 
+  async listFavorites(
+    customerUserId: string,
+    language: DiscoveryLanguage,
+    limit: number,
+    offset: number,
+  ): Promise<ProviderSearchPage> {
+    const result = await this.getPool().query<ProviderDirectoryRow>(
+      `
+        SELECT ${providerProjection}
+        ${providerJoins}
+        JOIN favorites AS customer_favorites
+          ON customer_favorites.provider_id = provider_profiles.id
+         AND customer_favorites.customer_user_id = $2::UUID
+        WHERE provider_profiles.profile_status = 'ACTIVE'
+          AND EXISTS (
+            SELECT 1
+            FROM provider_services AS active_service
+            JOIN service_categories AS active_category
+              ON active_category.id = active_service.category_id
+             AND active_category.is_active = TRUE
+            WHERE active_service.provider_id = provider_profiles.id
+          )
+          AND EXISTS (
+            SELECT 1
+            FROM users AS customer_user
+            JOIN user_roles AS customer_role
+              ON customer_role.user_id = customer_user.id
+             AND customer_role.role = 'CUSTOMER'
+            WHERE customer_user.id = $2::UUID
+              AND customer_user.account_status = 'ACTIVE'
+          )
+        ORDER BY customer_favorites.created_at DESC, provider_profiles.id ASC
+        LIMIT $3 OFFSET $4
+      `,
+      [language, customerUserId, limit + 1, offset],
+    );
+
+    const hasMore = result.rows.length > limit;
+    return {
+      items: result.rows.slice(0, limit).map(toSummary),
+      hasMore,
+    };
+  }
+
+  async addFavorite(customerUserId: string, providerId: string): Promise<boolean> {
+    const result = await this.getPool().query<{ eligible: boolean }>(
+      `
+        WITH eligible_customer AS MATERIALIZED (
+          SELECT users.id
+          FROM users
+          JOIN user_roles
+            ON user_roles.user_id = users.id
+           AND user_roles.role = 'CUSTOMER'
+          WHERE users.id = $1::UUID
+            AND users.account_status = 'ACTIVE'
+          FOR SHARE OF users, user_roles
+        ), eligible_provider AS MATERIALIZED (
+          SELECT provider_profiles.id
+          FROM provider_profiles
+          JOIN users AS provider_user
+            ON provider_user.id = provider_profiles.user_id
+           AND provider_user.account_status = 'ACTIVE'
+          WHERE provider_profiles.id = $2::UUID
+            AND provider_profiles.profile_status = 'ACTIVE'
+            AND EXISTS (
+              SELECT 1
+              FROM provider_services AS active_service
+              JOIN service_categories AS active_category
+                ON active_category.id = active_service.category_id
+               AND active_category.is_active = TRUE
+              WHERE active_service.provider_id = provider_profiles.id
+            )
+          FOR SHARE OF provider_profiles, provider_user
+        ), saved_favorite AS (
+          INSERT INTO favorites (customer_user_id, provider_id)
+          SELECT eligible_customer.id, eligible_provider.id
+          FROM eligible_customer
+          CROSS JOIN eligible_provider
+          ON CONFLICT (customer_user_id, provider_id) DO NOTHING
+          RETURNING provider_id
+        )
+        SELECT EXISTS (SELECT 1 FROM eligible_customer)
+           AND EXISTS (SELECT 1 FROM eligible_provider) AS eligible
+      `,
+      [customerUserId, providerId],
+    );
+    return result.rows[0]?.eligible ?? false;
+  }
+
+  async removeFavorite(customerUserId: string, providerId: string): Promise<void> {
+    await this.getPool().query(
+      `
+        DELETE FROM favorites
+        WHERE customer_user_id = $1::UUID
+          AND provider_id = $2::UUID
+          AND EXISTS (
+            SELECT 1
+            FROM users AS customer_user
+            JOIN user_roles AS customer_role
+              ON customer_role.user_id = customer_user.id
+             AND customer_role.role = 'CUSTOMER'
+            WHERE customer_user.id = $1::UUID
+              AND customer_user.account_status = 'ACTIVE'
+          )
+      `,
+      [customerUserId, providerId],
+    );
+  }
+
   async recordCallIntent(providerId: string): Promise<string | null> {
     const result = await this.getPool().query<{ phoneNumber: string }>(
       `

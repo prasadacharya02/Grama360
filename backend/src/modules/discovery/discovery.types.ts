@@ -56,4 +56,12 @@ export interface ProviderDirectoryStore {
     language: DiscoveryLanguage,
   ): Promise<PublicProviderProfile | null>;
   recordCallIntent(providerId: string): Promise<string | null>;
+  listFavorites(
+    customerUserId: string,
+    language: DiscoveryLanguage,
+    limit: number,
+    offset: number,
+  ): Promise<ProviderSearchPage>;
+  addFavorite(customerUserId: string, providerId: string): Promise<boolean>;
+  removeFavorite(customerUserId: string, providerId: string): Promise<void>;
 }

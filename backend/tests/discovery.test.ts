@@ -78,6 +78,9 @@ function createTestContext(roles: AppSession['roles'] = ['CUSTOMER']) {
     })),
     getPublicProfile: vi.fn(async () => profile),
     recordCallIntent: vi.fn(async () => '+919123456789'),
+    listFavorites: vi.fn(async () => ({ items: [provider], hasMore: false })),
+    addFavorite: vi.fn(async () => true),
+    removeFavorite: vi.fn(async () => undefined),
   };
   const app = createApp({
     authUserStore,
@@ -166,6 +169,75 @@ describe('customer provider discovery API', () => {
       .set('Authorization', 'Bearer valid-customer-token');
     expect(invalid.status).toBe(400);
     expect(invalid.body.error.code).toBe('INVALID_PROVIDER_SEARCH');
+  });
+
+  it('lists, saves, and removes customer-owned favorites with role and input checks', async () => {
+    const context = createTestContext();
+    const headers = { Authorization: 'Bearer valid-customer-token' };
+
+    const unauthenticated = await request(context.app).get('/api/v1/me/favorites');
+    expect(unauthenticated.status).toBe(401);
+    expect(context.providerDirectoryStore.listFavorites).not.toHaveBeenCalled();
+
+    const invalidQuery = await request(context.app)
+      .get('/api/v1/me/favorites?limit=200')
+      .set(headers);
+    expect(invalidQuery.status).toBe(400);
+    expect(invalidQuery.body.error.code).toBe('INVALID_FAVORITES_QUERY');
+
+    const listed = await request(context.app)
+      .get('/api/v1/me/favorites?language=kn&limit=10&offset=0')
+      .set(headers);
+    expect(listed.status).toBe(200);
+    expect(listed.body.items[0].id).toBe(providerId);
+    expect(listed.body.items[0]).not.toHaveProperty('phoneNumber');
+    expect(context.providerDirectoryStore.listFavorites).toHaveBeenCalledWith(
+      customerSession.user.id,
+      'kn',
+      10,
+      0,
+    );
+
+    const invalidId = await request(context.app)
+      .put('/api/v1/me/favorites/not-a-uuid')
+      .set(headers);
+    expect(invalidId.status).toBe(400);
+
+    const saved = await request(context.app)
+      .put(`/api/v1/me/favorites/${providerId}`)
+      .set(headers);
+    expect(saved.status).toBe(200);
+    expect(saved.body.favorite).toBe(true);
+    expect(context.providerDirectoryStore.addFavorite).toHaveBeenCalledWith(
+      customerSession.user.id,
+      providerId,
+    );
+
+    const removed = await request(context.app)
+      .delete(`/api/v1/me/favorites/${providerId}`)
+      .set(headers);
+    expect(removed.status).toBe(200);
+    expect(removed.body.favorite).toBe(false);
+    expect(context.providerDirectoryStore.removeFavorite).toHaveBeenCalledWith(
+      customerSession.user.id,
+      providerId,
+    );
+
+    const inactiveProvider = createTestContext();
+    vi.mocked(inactiveProvider.providerDirectoryStore.addFavorite).mockResolvedValueOnce(false);
+    const missing = await request(inactiveProvider.app)
+      .put(`/api/v1/me/favorites/${providerId}`)
+      .set(headers);
+    expect(missing.status).toBe(404);
+    expect(missing.body.error.code).toBe('PROVIDER_NOT_FOUND');
+
+    const providerOnly = createTestContext(['PROVIDER']);
+    const forbidden = await request(providerOnly.app)
+      .get('/api/v1/me/favorites')
+      .set(headers);
+    expect(forbidden.status).toBe(403);
+    expect(forbidden.body.error.code).toBe('CUSTOMER_ROLE_REQUIRED');
+    expect(providerOnly.providerDirectoryStore.listFavorites).not.toHaveBeenCalled();
   });
 
   it('returns only an approved public profile and validates provider IDs', async () => {

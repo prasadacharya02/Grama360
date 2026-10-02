@@ -219,6 +219,42 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
     expect(finalOwnerProfile.body.profileStatus).toBe('ACTIVE');
     expect(finalOwnerProfile.body.reviewNote).toBeNull();
 
+    const emptyFavorites = await request(app)
+      .get('/api/v1/me/favorites?language=en')
+      .set(customerHeaders);
+    expect(emptyFavorites.status).toBe(200);
+    expect(emptyFavorites.body.items).toEqual([]);
+
+    const savedFavorite = await request(app)
+      .put(`/api/v1/me/favorites/${providerProfileId}`)
+      .set(customerHeaders);
+    expect(savedFavorite.status).toBe(200);
+    expect(savedFavorite.body.favorite).toBe(true);
+    const savedAgain = await request(app)
+      .put(`/api/v1/me/favorites/${providerProfileId}`)
+      .set(customerHeaders);
+    expect(savedAgain.status).toBe(200);
+    expect(savedAgain.body.favorite).toBe(true);
+
+    const favorites = await request(app)
+      .get('/api/v1/me/favorites?language=kn&limit=10')
+      .set(customerHeaders);
+    expect(favorites.status).toBe(200);
+    expect(favorites.body.items.map((item: { id: string }) => item.id)).toContain(
+      providerProfileId,
+    );
+    expect(favorites.body.items[0]).not.toHaveProperty('phoneNumber');
+
+    const removedFavorite = await request(app)
+      .delete(`/api/v1/me/favorites/${providerProfileId}`)
+      .set(customerHeaders);
+    expect(removedFavorite.status).toBe(200);
+    expect(removedFavorite.body.favorite).toBe(false);
+    const removedAgain = await request(app)
+      .delete(`/api/v1/me/favorites/${providerProfileId}`)
+      .set(customerHeaders);
+    expect(removedAgain.status).toBe(200);
+
     const availableFilterBeforeChange = await request(app)
       .get(`/api/v1/providers?categoryId=${serviceId}&availableNow=true`)
       .set(customerHeaders);
@@ -264,6 +300,10 @@ describe.skipIf(!runDatabaseSmoke)('PostgreSQL provider review end-to-end smoke 
       "UPDATE provider_profiles SET profile_status = 'SUSPENDED' WHERE id = $1::UUID",
       [providerProfileId],
     );
+    const suspendedFavorite = await request(app)
+      .put(`/api/v1/me/favorites/${providerProfileId}`)
+      .set(customerHeaders);
+    expect(suspendedFavorite.status).toBe(404);
     const suspendedAvailability = await request(app)
       .patch('/api/v1/provider-profiles/me/availability')
       .set(providerHeaders)

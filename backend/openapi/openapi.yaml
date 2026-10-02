@@ -92,6 +92,81 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           description: Session has not been synchronized yet.
+  /me/favorites:
+    get:
+      summary: List the authenticated customer's saved providers.
+      description: Returns only the caller's saved providers that are still active and publicly discoverable. Summaries never include contact numbers.
+      parameters:
+        - in: query
+          name: language
+          schema:
+            type: string
+            enum: [en, kn]
+            default: en
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 100000
+            default: 0
+      responses:
+        '200':
+          description: Paginated public-safe favorites page.
+        '400':
+          description: Favorite page filters are invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
+  /me/favorites/{providerId}:
+    put:
+      summary: Idempotently save a provider for the authenticated customer.
+      description: The customer identity is derived from the Firebase session. Only active providers with active service categories can be saved.
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Favorite is saved; the response confirms the provider is saved.
+        '400':
+          description: Provider ID is invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
+        '404':
+          description: Provider is not active or publicly discoverable.
+    delete:
+      summary: Remove a provider from the authenticated customer's favorites.
+      description: Idempotent; only the caller's favorite row is removed.
+      parameters:
+        - in: path
+          name: providerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Favorite is removed; the response confirms the provider is no longer saved.
+        '400':
+          description: Provider ID is invalid.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Customer role required or account disabled.
   /categories:
     get:
       security: []
